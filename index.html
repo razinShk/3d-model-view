@@ -1,0 +1,4278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Razin Tooling - 3D Model Viewer and Cost Calculator</title>
+  <meta name="description"
+    content="View, measure, and calculate material costs for 3D models. Supports STL files with interactive measurements and volume calculation.">
+  <!-- Three.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls for camera control -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+  <!-- STL Loader for loading STL files -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.min.js"></script>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #0066cc;
+      --primary-dark: #004c99;
+      --primary-light: #e6f0ff;
+      --secondary-color: #39A9DB;
+      --success-color: #4CAF50;
+      --success-light: #e8f5e9;
+      --error-color: #d32f2f;
+      --error-light: #fff8f8;
+      --text-color: #2d3748;
+      --text-light: #718096;
+      --background-light: #f8f9fa;
+      --background-dark: #1a202c;
+      --white: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --shadow-strong: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --border-radius: 8px;
+      --border-color: #e2e8f0;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-light);
+      color: var(--text-color);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    /* Header and Navigation */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+      color: var(--white);
+      padding: 1.5rem 0;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 10;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo-icon {
+      font-size: 2rem;
+      margin-right: 10px;
+      color: var(--white);
+    }
+
+    .logo-text {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.5px;
+    }
+
+    .logo-subtext {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    /* Navigation buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background-color: var(--white);
+      color: var(--primary-color);
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: 500;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background-color: var(--primary-light);
+    }
+
+    .nav-btn.active {
+      background-color: var(--primary-dark);
+      color: var(--white);
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(rgba(0, 45, 98, 0.8), rgba(0, 45, 98, 0.9)), url('https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80');
+      background-size: cover;
+      background-position: center;
+      color: var(--white);
+      padding: 5rem 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .features {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .feature {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      flex: 1;
+      min-width: 220px;
+      max-width: 300px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .feature:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-strong);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--secondary-color);
+    }
+
+    .section {
+      padding: 4rem 0;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 50px;
+      height: 4px;
+      background-color: var(--primary-color);
+      margin: 0.5rem auto 0;
+      border-radius: 2px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      background-color: var(--primary-color);
+      color: var(--white);
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      font-size: 1rem;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 2px solid var(--white);
+      margin-left: 1rem;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--white);
+      color: var(--primary-color);
+    }
+
+    /* Main Content Styles */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 20px;
+    }
+
+    .card {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-strong);
+    }
+
+    /* Model Containers */
+    .model-container {
+      margin-bottom: 2.5rem;
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .model-container:hover {
+      box-shadow: var(--shadow-strong);
+    }
+
+    /* Modify this to create a side-by-side layout */
+    .model-viewer-container {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .model-viewer {
+      width: 100%;
+      height: 400px;
+      background-color: var(--background-dark);
+      position: relative;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .model-info {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .model-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .model-controls {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 0.5rem 1rem;
+      border-radius: var(--border-radius);
+      color: var(--white);
+      font-size: 0.8rem;
+      z-index: 100;
+      backdrop-filter: blur(5px);
+    }
+
+    .placeholder-message {
+      color: var(--white);
+      text-align: center;
+      padding: 2rem;
+      max-width: 80%;
+    }
+
+    .placeholder-message h3 {
+      margin-top: 0;
+      color: var(--white);
+      margin-bottom: 1rem;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background-color: #e9ecef;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 5px;
+    }
+
+    /* Download Links Section */
+    .download-links {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+
+    .download-links h2 {
+      color: var(--text-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .download-links h3 {
+      color: var(--primary-color);
+      margin: 1.5rem 0 1rem;
+      font-size: 1.2rem;
+    }
+
+    .download-links ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .download-links li {
+      margin-bottom: 0.8rem;
+      padding: 0.8rem 1rem;
+      background-color: var(--background-light);
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+    }
+
+    .download-links li:hover {
+      background-color: var(--primary-light);
+      transform: translateX(5px);
+    }
+
+    .download-links a {
+      color: var(--primary-color);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .download-links a:hover {
+      text-decoration: none;
+      color: var(--primary-dark);
+    }
+
+    .download-links a i {
+      margin-right: 10px;
+    }
+
+    /* Footer */
+    .footer {
+      background-color: var(--background-dark);
+      color: var(--white);
+      padding: 3rem 0 2rem;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .footer-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--white);
+    }
+
+    .footer p {
+      margin-bottom: 1.5rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .footer-link {
+      color: var(--white);
+      margin: 0 1rem;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-link:hover {
+      color: var(--secondary-color);
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .social-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      margin: 0 0.5rem;
+      color: var(--white);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .social-link:hover {
+      background-color: var(--primary-color);
+      transform: translateY(-3px);
+    }
+
+    .copyright {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .logo {
+        margin-bottom: 1rem;
+        justify-content: center;
+      }
+
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      .features {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .feature {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+      }
+
+      .btn-secondary {
+        margin-left: 0;
+      }
+    }
+
+    /* Measurement Tool Styles */
+    .measurement-panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      border-radius: var(--border-radius);
+      z-index: 100;
+      font-size: 14px;
+      backdrop-filter: blur(5px);
+      box-shadow: var(--shadow);
+      max-width: 220px;
+      user-select: none;
+      display: none;
+    }
+
+    .measurement-panel.active {
+      display: block;
+    }
+
+    .measurement-panel h4 {
+      margin: 0 0 10px 0;
+      font-size: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      padding-bottom: 5px;
+    }
+
+    .measurement-panel button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .measurement-panel button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .measurement-panel button.active {
+      background-color: #4CAF50;
+    }
+
+    .measurement-result {
+      margin-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      padding-top: 10px;
+    }
+
+    .measurement-result p {
+      margin: 3px 0;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .measurement-crosshair {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #ff0000;
+      background-color: rgba(255, 0, 0, 0.3);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+    }
+
+    /* Multi-file viewer styles */
+    .multi-file-section {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .multi-file-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .multi-file-button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .multi-file-button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .multi-file-content {
+      display: none;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      background-color: var(--background-light);
+    }
+
+    .multi-file-content.active {
+      display: block;
+    }
+
+    .multi-file-inputs {
+      margin-bottom: 1rem;
+    }
+
+    .file-input-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .file-input-label {
+      min-width: 80px;
+      font-weight: 500;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      flex-grow: 1;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-text {
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.5rem;
+      background-color: white;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .add-file-row {
+      margin-top: 0.5rem;
+    }
+
+    .add-file-btn {
+      background-color: transparent;
+      color: var(--primary-color);
+      border: 1px dashed var(--primary-color);
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .add-file-btn:hover {
+      background-color: var(--primary-light);
+    }
+
+    .multi-file-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    .multi-file-view-btn {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .multi-file-view-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .multi-viewers-container {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    .multi-viewers-container.active {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .multi-viewer-item {
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .multi-viewer-item:hover {
+      box-shadow: var(--shadow-strong);
+    }
+
+    .multi-viewer-title {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .multi-viewer-container {
+      height: 300px;
+      background-color: #222;
+      flex: 1;
+      position: relative;
+    }
+
+    /* Ensure model-viewer-container in multi-viewer has proper flex */
+    .multi-viewer-item .model-viewer-container {
+      display: flex;
+      flex-direction: row;
+      height: 300px;
+    }
+
+    /* Make measurements panel in multi-viewer smaller */
+    .multi-viewer-item .model-measurements {
+      flex: 0 0 280px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      padding: 10px;
+    }
+
+    .multi-viewer-item .model-measurements h4 {
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    .multi-viewer-item .measurement-item {
+      margin-bottom: 6px;
+    }
+
+    .model-comparison-tools {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .model-comparison-tools.active {
+      display: block;
+    }
+
+    .tool-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 0.5rem;
+    }
+
+    .tool-btn {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .tool-btn:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    /* Material calculation panel */
+    .material-calc-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: var(--text-color);
+      padding: 15px;
+      border-radius: var(--border-radius);
+      z-index: 100;
+      width: 250px;
+      box-shadow: var(--shadow);
+      max-height: 80%;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .material-calc-panel.active {
+      display: block;
+    }
+
+    .material-calc-panel h4 {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .dimension-item {
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .dimension-name {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .dimension-value {
+      float: right;
+      font-family: monospace;
+    }
+
+    .material-params {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .material-params label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.85rem;
+    }
+
+    .material-params input {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .material-calc-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    .material-calc-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .cost-result {
+      margin-top: 12px;
+      padding: 10px;
+      background-color: var(--primary-light);
+      border-radius: 4px;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+
+    .model-buttons {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 100;
+      /* Increase z-index to ensure visibility */
+      display: flex;
+      gap: 8px;
+    }
+
+    .model-button {
+      background-color: rgba(0, 102, 204, 0.9);
+      /* Brighter blue */
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      /* Slightly larger */
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      /* Make text bolder */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      /* Add shadow for prominence */
+    }
+
+    .model-button:hover {
+      background-color: rgba(0, 102, 204, 1);
+      transform: translateY(-2px);
+    }
+
+    /* Model Measurements */
+    .model-measurements {
+      margin-top: 0;
+      background-color: var(--primary-light);
+      padding: 15px;
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--primary-color);
+      font-family: 'Poppins', monospace;
+      flex: 0 0 300px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .model-measurements h4 {
+      margin: 0 0 10px 0;
+      color: var(--text-color);
+      font-size: 1rem;
+    }
+
+    .measurement-item {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .measurement-item span:first-child {
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .measurement-item span:last-child {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    /* Tabs */
+    .converter-tabs {
+      display: flex;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .converter-tab {
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      background-color: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-weight: 500;
+      color: var(--text-light);
+      transition: var(--transition);
+    }
+
+    .converter-tab.active {
+      color: var(--primary-color);
+      border-bottom: 3px solid var(--primary-color);
+      font-weight: 600;
+    }
+
+    .converter-tab:hover:not(.active) {
+      color: var(--text-color);
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .converter-content {
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      border-top: none;
+      background-color: var(--white);
+      border-radius: 0 0 var(--border-radius) var(--border-radius);
+    }
+
+    /* Upload Area */
+    .file-upload-area {
+      border: 2px dashed var(--border-color);
+      padding: 2.5rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      transition: var(--transition);
+      background-color: var(--background-light);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+    }
+
+    .file-upload-area:hover {
+      border-color: var(--primary-color);
+      background-color: var(--primary-light);
+    }
+
+    .file-upload-area.drag-over {
+      border-color: var(--success-color);
+      background-color: var(--success-light);
+    }
+
+    .file-upload-btn {
+      background-color: var(--primary-color);
+      color: var(--white);
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-top: 1rem;
+    }
+
+    .file-upload-btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* Messages */
+    .alert {
+      background-color: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(0, 102, 204, 0.2);
+      line-height: 1.5;
+    }
+
+    .alert h3 {
+      margin-top: 0;
+      color: var(--primary-dark);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .alert code {
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .instructions {
+      background-color: var(--secondary-color);
+      color: var(--white);
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .instructions h3 {
+      margin-top: 0;
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .instructions code {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--white);
+    }
+
+    .error-message {
+      color: var(--error-color);
+      background-color: var(--error-light);
+      padding: 1rem;
+      border-left: 4px solid var(--error-color);
+      margin: 1rem 0;
+      display: none;
+      border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    }
+
+    .success-message {
+      color: var(--success-color);
+      background-color: var(--success-light);
+      padding: 1rem;
+      border-left: 4px solid var(--success-color);
+      margin: 1rem 0;
+      display: none;
+      border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    }
+
+    .multi-file-batch-upload {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: var(--primary-light);
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .multi-file-batch-upload h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .batch-upload-container {
+      display: flex;
+      justify-content: center;
+      margin: 15px 0;
+    }
+
+    #batch-upload-preview {
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .batch-file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 5px;
+      background-color: white;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .batch-file-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80%;
+    }
+
+    .batch-file-remove {
+      color: var(--error-color);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 5px;
+    }
+
+    .multi-viewers-container.active {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .multi-viewer-container .model-buttons {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+
+    .multi-viewer-container .model-button {
+      background-color: rgba(0, 102, 204, 0.9);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .multi-viewer-container .model-button:hover {
+      background-color: rgba(0, 102, 204, 1);
+      transform: translateY(-2px);
+    }
+
+    /* Update model material colors to match reference image */
+    .model-color-settings {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+      background-color: var(--background-light);
+      padding: 12px;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+    }
+
+    .model-color-settings h4 {
+      margin: 0 0 8px 0;
+      font-size: 0.95rem;
+    }
+
+    .color-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-preview {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Measurement tools outside model container */
+    .measurement-tools-container {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      border-top: 3px solid var(--primary-color);
+    }
+
+    .measurement-tools-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .measurement-tools-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .measurement-tools-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .measurement-tools-results {
+      flex: 1;
+      min-width: 250px;
+      background-color: var(--primary-light);
+      padding: 10px;
+      border-radius: var(--border-radius);
+    }
+
+    .dimension-label {
+      background-color: rgba(0, 136, 255, 0.85);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      font-family: monospace;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+    }
+
+    /* Update dimension line colors to match reference */
+    .dimension-line {
+      stroke: #00a6ff;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-content">
+      <div class="logo">
+        <i class="fas fa-tools logo-icon"></i>
+        <div>
+          <div class="logo-text">Razin Tooling Services</div>
+          <div class="logo-subtext">Precision Engineering Solutions</div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="nav-buttons">
+        <a href="index_local.html" class="nav-btn active">
+          <i class="fas fa-cube"></i> STL Viewer
+        </a>
+        <a href="stp-viewer.html" class="nav-btn">
+          <i class="fas fa-drafting-compass"></i> STP Viewer
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Advanced 3D Model Visualization</h1>
+      <p>Seamlessly view, analyze, and convert your engineering models with our state-of-the-art visualization tools.
+        From IGS to STL conversion, get precise measurements and interactive 3D visualization in seconds.</p>
+      <div>
+        <a href="#viewer-section" class="btn">Try It Now</a>
+        <a href="#learn-more" class="btn btn-secondary">Learn More</a>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <i class="fas fa-cube feature-icon"></i>
+          <h3>3D Visualization</h3>
+          <p>Interactive models with detailed views and controls</p>
+        </div>
+        <div class="feature">
+          <i class="fas fa-ruler-combined feature-icon"></i>
+          <h3>Precise Measurements</h3>
+          <p>Get accurate dimensions for all your models</p>
+        </div>
+        <div class="feature">
+          <i class="fas fa-exchange-alt feature-icon"></i>
+          <h3>File Conversion</h3>
+          <p>Convert IGS files to STL format seamlessly</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <section id="viewer-section">
+      <h2 class="section-title">3D Model Viewer</h2>
+
+      <!-- New Converter Section -->
+      <div class="card">
+        <h2><i class="fas fa-upload"></i> Upload and Convert 3D Models</h2>
+        <p>Upload your own 3D models to view them directly in the browser. You can upload either STL files or IGS files.
+        </p>
+
+        <div class="converter-tabs">
+          <div class="converter-tab active" id="tab-view-model">View Model</div>
+          <div class="converter-tab" id="tab-convert-igs">Convert IGS to STL</div>
+        </div>
+
+        <div class="converter-content" id="content-view-model">
+          <h3><i class="fas fa-file-upload"></i> Upload 3D Model</h3>
+          <div class="file-upload-area" id="drop-area-model">
+            <i class="fas fa-cloud-upload-alt"
+              style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-color);"></i>
+            <p>Drag &amp; drop your 3D model file here, or</p>
+            <input type="file" id="file-upload-model" accept=".stl,.igs" style="display: none;">
+            <button class="file-upload-btn" id="file-upload-btn-model">Select File</button>
+            <p class="small">Supported formats: .STL, .IGS</p>
+          </div>
+          <div class="error-message" id="error-message-model"></div>
+          <div class="success-message" id="success-message-model"></div>
+
+          <div class="custom-viewer-container">
+            <div class="model-container">
+              <div class="model-viewer-container">
+                <div class="model-viewer" id="custom-viewer">
+                  <div class="placeholder-message">
+                    <h3>Your 3D Model</h3>
+                    <p>Upload a file above to view it here</p>
+                  </div>
+                </div>
+                <div class="model-measurements" id="custom-measurements">
+                  <h4>Model Measurements</h4>
+                  <div class="measurement-item">
+                    <span>Width:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Height:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Depth:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Volume:</span> <span>0.00 mm³</span>
+                  </div>
+                </div>
+              </div>
+              <div class="measurement-tools-container">
+                <div class="measurement-tools-header">
+                  <h4><i class="fas fa-ruler-combined"></i> Measurement Tools</h4>
+                  <button class="model-button" id="toggle-tools-custom-viewer">
+                    <i class="fas fa-chevron-up"></i>
+                  </button>
+                </div>
+                <div class="measurement-tools-content">
+                  <div class="measurement-tools-buttons">
+                    <button class="model-button" id="measure-point-custom-viewer"
+                      title="Click on model to show coordinates">
+                      <i class="fas fa-map-marker-alt"></i> Point
+                    </button>
+                    <button class="model-button" id="measure-distance-custom-viewer"
+                      title="Click two points to measure distance">
+                      <i class="fas fa-arrows-alt-h"></i> Distance
+                    </button>
+                    <button class="model-button" id="measure-angle-custom-viewer"
+                      title="Click three points to measure angle">
+                      <i class="fas fa-drafting-compass"></i> Angle
+                    </button>
+                    <button class="model-button" id="clear-measure-custom-viewer" title="Clear all measurements">
+                      <i class="fas fa-trash-alt"></i> Clear
+                    </button>
+                  </div>
+                  <div class="measurement-tools-results" id="measurement-results-custom-viewer">
+                    <p>Select a measurement tool and click on the model to measure</p>
+                  </div>
+                </div>
+              </div>
+              <div class="model-info">
+                <div class="model-title" id="custom-model-title">Custom Model</div>
+                <button id="download-custom-model" class="file-upload-btn" style="display: none;">Download STL</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="converter-content" id="content-convert-igs" style="display: none;">
+          <h3><i class="fas fa-exchange-alt"></i> Convert IGS to STL</h3>
+          <div class="file-upload-area" id="drop-area-convert">
+            <i class="fas fa-cloud-upload-alt"
+              style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-color);"></i>
+            <p>Drag &amp; drop your IGS file here, or</p>
+            <input type="file" id="file-upload-convert" accept=".igs" style="display: none;">
+            <button class="file-upload-btn" id="file-upload-btn-convert">Select IGS File</button>
+            <p class="small">Supported format: .IGS</p>
+          </div>
+
+          <div class="conversion-options">
+            <h4><i class="fas fa-cog"></i> Conversion Options</h4>
+            <div>
+              <label>
+                <input type="checkbox" id="option-center" checked>
+                Center model
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" id="option-optimize" checked>
+                Optimize mesh
+              </label>
+            </div>
+            <div>
+              <label>
+                Mesh quality:
+                <select id="option-quality">
+                  <option value="low">Low (faster)</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High (slower)</option>
+                </select>
+              </label>
+            </div>
+
+            <button class="file-upload-btn" id="convert-button" disabled><i class="fas fa-sync-alt"></i> Convert to
+              STL</button>
+          </div>
+
+          <div class="conversion-progress">
+            <h4><i class="fas fa-spinner fa-spin"></i> Conversion Progress</h4>
+            <div id="progress-status">Preparing...</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="conversion-progress-bar"></div>
+            </div>
+          </div>
+
+          <div class="error-message" id="error-message-convert"></div>
+          <div class="success-message" id="success-message-convert"></div>
+        </div>
+      </div>
+
+      <div class="alert">
+        <h3><i class="fas fa-info-circle"></i> 3D Model Viewer Information</h3>
+        <p>This application uses WebGL to display 3D models. Make sure your browser supports WebGL.</p>
+        <p>For optimal performance:</p>
+        <ol>
+          <li>Use a modern browser like Chrome, Firefox, or Edge</li>
+          <li>Enable hardware acceleration in your browser settings</li>
+          <li>You can upload your own STL files using the file uploader above</li>
+        </ol>
+      </div>
+
+      <div class="instructions">
+        <h3><i class="fas fa-cube"></i> How to use the 3D Model Viewer:</h3>
+        <ol>
+          <li>Use the mouse to interact with the 3D model:</li>
+          <li>Left-click and drag to rotate the model</li>
+          <li>Right-click and drag to pan</li>
+          <li>Scroll to zoom in and out</li>
+          <li>Click "Show Dimensions" to see measurements and calculate material costs</li>
+        </ol>
+      </div>
+
+      <!-- Model Containers -->
+      <!-- Model 1 -->
+      <!-- <div class="model-container">
+        <div class="model-viewer-container">
+        <div class="model-viewer" id="viewer-1">
+          <div class="placeholder-message">
+            <h3>0104CZ100060N_010.stl</h3>
+            <p>Upload the STL file using the input above to view the 3D model</p>
+            </div>
+          </div>
+          <div class="model-measurements" id="measurements-1">
+            <h4>Model Measurements</h4>
+            <div class="measurement-item">
+              <span>Width:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Height:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Depth:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Volume:</span> <span>0.00 mm³</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-info">
+          <div class="model-title">0104CZ100060N_010.stl</div>
+          <a href="models/0104CZ100060N_010.stl" download class="btn btn-secondary"><i class="fas fa-download"></i>
+            Download STL File</a>
+        </div>
+      </div> -->
+
+      <!-- Model 2 -->
+      <!-- <div class="model-container">
+        <div class="model-viewer-container">
+        <div class="model-viewer" id="viewer-2">
+          <div class="placeholder-message">
+            <h3>0104EZ100770N_004.stl</h3>
+            <p>Upload the STL file using the input above to view the 3D model</p>
+            </div>
+          </div>
+          <div class="model-measurements" id="measurements-2">
+            <h4>Model Measurements</h4>
+            <div class="measurement-item">
+              <span>Width:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Height:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Depth:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Volume:</span> <span>0.00 mm³</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-info">
+          <div class="model-title">0104EZ100770N_004.stl</div>
+          <a href="models/0104EZ100770N_004.stl" download class="btn btn-secondary"><i class="fas fa-download"></i>
+            Download STL File</a>
+        </div>
+      </div> -->
+
+      <!-- Model 3 -->
+      <!-- <div class="model-container">
+        <div class="model-viewer-container">
+        <div class="model-viewer" id="viewer-3">
+          <div class="placeholder-message">
+            <h3>0104EZ100780N_004.stl</h3>
+            <p>Upload the STL file using the input above to view the 3D model</p>
+            </div>
+          </div>
+          <div class="model-measurements" id="measurements-3">
+            <h4>Model Measurements</h4>
+            <div class="measurement-item">
+              <span>Width:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Height:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Depth:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Volume:</span> <span>0.00 mm³</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-info">
+          <div class="model-title">0104EZ100780N_004.stl</div>
+          <a href="models/0104EZ100780N_004.stl" download class="btn btn-secondary"><i class="fas fa-download"></i>
+            Download STL File</a>
+        </div>
+      </div> -->
+
+      <!-- Model 4 -->
+      <!-- <div class="model-container">
+        <div class="model-viewer-container">
+        <div class="model-viewer" id="viewer-4">
+          <div class="placeholder-message">
+            <h3>0104EZ101350N_004.stl</h3>
+            <p>Upload the STL file using the input above to view the 3D model</p>
+            </div>
+          </div>
+          <div class="model-measurements" id="measurements-4">
+            <h4>Model Measurements</h4>
+            <div class="measurement-item">
+              <span>Width:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Height:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Depth:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Volume:</span> <span>0.00 mm³</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-info">
+          <div class="model-title">0104EZ101350N_004.stl</div>
+          <a href="models/0104EZ101350N_004.stl" download class="btn btn-secondary"><i class="fas fa-download"></i>
+            Download STL File</a>
+        </div>
+      </div> -->
+
+      <!-- Model 5 -->
+      <!-- <div class="model-container">
+        <div class="model-viewer-container">
+        <div class="model-viewer" id="viewer-5">
+          <div class="placeholder-message">
+            <h3>0104EZ101720N_003.stl</h3>
+            <p>Upload the STL file using the input above to view the 3D model</p>
+            </div>
+          </div>
+          <div class="model-measurements" id="measurements-5">
+            <h4>Model Measurements</h4>
+            <div class="measurement-item">
+              <span>Width:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Height:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Depth:</span> <span>0.00 mm</span>
+            </div>
+            <div class="measurement-item">
+              <span>Volume:</span> <span>0.00 mm³</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-info">
+          <div class="model-title">0104EZ101720N_003.stl</div>
+          <a href="models/0104EZ101720N_003.stl" download class="btn btn-secondary"><i class="fas fa-download"></i>
+            Download STL File</a>
+        </div>
+      </div> -->
+    </section>
+
+    <!-- <div class="download-links">
+      <h2 id="all-files">All Available Files</h2>
+      <h3><i class="fas fa-cube"></i> STL Files</h3>
+      <ul>
+        <li><a href="models/0104CZ100060N_010.stl" download><i class="fas fa-file-download"></i>
+            0104CZ100060N_010.stl</a></li>
+        <li><a href="models/0104EZ100770N_004.stl" download><i class="fas fa-file-download"></i>
+            0104EZ100770N_004.stl</a></li>
+        <li><a href="models/0104EZ100780N_004.stl" download><i class="fas fa-file-download"></i>
+            0104EZ100780N_004.stl</a></li>
+        <li><a href="models/0104EZ101350N_004.stl" download><i class="fas fa-file-download"></i>
+            0104EZ101350N_004.stl</a></li>
+        <li><a href="models/0104EZ101720N_003.stl" download><i class="fas fa-file-download"></i>
+            0104EZ101720N_003.stl</a></li>
+      </ul>
+
+      <h3><i class="fas fa-file-alt"></i> Original IGS Files</h3>
+      <ul>
+        <li><a href="0104CZ100060N_010.igs" download><i class="fas fa-file-download"></i> 0104CZ100060N_010.igs</a></li>
+        <li><a href="0104CZ100420N_010.igs" download><i class="fas fa-file-download"></i> 0104CZ100420N_010.igs</a></li>
+        <li><a href="0104EZ100770N_004.igs" download><i class="fas fa-file-download"></i> 0104EZ100770N_004.igs</a></li>
+        <li><a href="0104EZ100780N_004.igs" download><i class="fas fa-file-download"></i> 0104EZ100780N_004.igs</a></li>
+        <li><a href="0104EZ101350N_004.igs" download><i class="fas fa-file-download"></i> 0104EZ101350N_004.igs</a></li>
+        <li><a href="0104EZ101720N_003.igs" download><i class="fas fa-file-download"></i> 0104EZ101720N_003.igs</a></li>
+      </ul>
+    </div> -->
+
+    <div class="multi-file-section">
+      <div class="multi-file-header">
+        <h2><i class="fas fa-cubes"></i> Multi-File Viewer</h2>
+        <button class="multi-file-button" id="toggle-multi-file">
+          <i class="fas fa-plus-circle"></i> Open Multi-File Viewer
+        </button>
+      </div>
+      <div class="multi-file-content" id="multi-file-content">
+        <div class="multi-file-inputs" id="multi-file-inputs">
+          <div class="file-input-row">
+            <div class="file-input-label">Model 1:</div>
+            <div class="file-input-wrapper">
+              <div class="file-input-text">No file chosen</div>
+              <input type="file" class="multi-stl-input" accept=".stl" data-index="0">
+            </div>
+          </div>
+          <div class="file-input-row">
+            <div class="file-input-label">Model 2:</div>
+            <div class="file-input-wrapper">
+              <div class="file-input-text">No file chosen</div>
+              <input type="file" class="multi-stl-input" accept=".stl" data-index="1">
+            </div>
+          </div>
+        </div>
+        <div class="add-file-row">
+          <button class="add-file-btn" id="add-file-input">
+            <i class="fas fa-plus"></i> Add Another Model
+          </button>
+        </div>
+        <div class="multi-file-batch-upload">
+          <h4><i class="fas fa-upload"></i> Batch Upload</h4>
+          <p>Or select multiple files at once (up to 20 files):</p>
+          <div class="batch-upload-container">
+            <input type="file" id="batch-file-upload" multiple accept=".stl" style="display: none;">
+            <button class="file-upload-btn" id="batch-upload-btn">Select Multiple Files</button>
+          </div>
+          <div id="batch-upload-preview"></div>
+        </div>
+        <div class="multi-file-actions">
+          <button class="multi-file-view-btn" id="load-multiple-files">
+            <i class="fas fa-eye"></i> View Models
+          </button>
+        </div>
+      </div>
+      <div class="multi-viewers-container" id="multi-viewers-container"></div>
+      <div class="model-comparison-tools" id="model-comparison-tools">
+        <h3>Comparison Tools</h3>
+        <p>Use these tools to analyze multiple models at once:</p>
+        <div class="tool-buttons">
+          <button class="tool-btn" id="sync-views">
+            <i class="fas fa-sync"></i> Sync Camera Views
+          </button>
+          <button class="tool-btn" id="measure-all">
+            <i class="fas fa-ruler"></i> Measure All Models
+          </button>
+          <button class="tool-btn" id="toggle-side-by-side">
+            <i class="fas fa-columns"></i> Toggle Layout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-logo">Razin Tooling Services</div>
+      <p>Providing precision engineering solutions to meet your design and manufacturing needs.</p>
+      <div class="footer-links">
+        <a href="#viewer-section" class="footer-link">3D Models</a>
+        <a href="#all-files" class="footer-link">Downloads</a>
+        <a href="#" class="footer-link">About Us</a>
+        <a href="#" class="footer-link">Contact</a>
+      </div>
+      <div class="social-links">
+        <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+        <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+      </div>
+      <div class="copyright">
+        &copy;
+        <script>document.write(new Date().getFullYear())</script> Razin Tooling Services. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Configuration for the 3D models
+    const models = [
+      { id: 'viewer-1', fileInput: 'file1', filename: '0104CZ100060N_010.stl' },
+      { id: 'viewer-2', fileInput: 'file2', filename: '0104EZ100770N_004.stl' },
+      { id: 'viewer-3', fileInput: 'file3', filename: '0104EZ100780N_004.stl' },
+      { id: 'viewer-4', fileInput: 'file4', filename: '0104EZ101350N_004.stl' },
+      { id: 'viewer-5', fileInput: 'file5', filename: '0104EZ101720N_003.stl' }
+    ];
+
+    // Initialize UI functionality when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', initializeUI);
+
+    // Main initialization function
+    function initializeUI() {
+      console.log("DOM fully loaded, initializing UI...");
+
+      // Initialize tab switching
+      initializeTabs();
+
+      // Initialize file upload for viewing models
+      initializeFileUploads();
+
+      // Initialize the custom model viewer upload
+      initializeCustomModelUpload();
+
+      // Initialize IGS conversion functionality
+      initializeIgsConversion();
+
+      // Initialize batch upload functionality
+      initializeBatchUpload();
+
+      // Initialize multi-file viewer
+      initializeMultiFileViewer();
+
+      // Initialize side-by-side layout
+      document.querySelectorAll('.model-viewer').forEach(viewer => {
+        const container = viewer.closest('.model-container');
+        if (container) {
+          const measurementsID = viewer.id === 'custom-viewer' ? 'custom-measurements' : `measurements-${viewer.id.split('-')[1]}`;
+          let measurementsDiv = document.getElementById(measurementsID);
+
+          if (measurementsDiv) {
+            // Update measurement panel visibility
+            const showDimensionsBtn = container.querySelector('.model-button');
+            if (showDimensionsBtn) {
+              showDimensionsBtn.addEventListener('click', function () {
+                measurementsDiv.style.display = measurementsDiv.style.display === 'none' ? 'block' : 'none';
+              });
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize tab switching functionality
+    function initializeTabs() {
+      const tabViewModel = document.getElementById('tab-view-model');
+      const tabConvertIgs = document.getElementById('tab-convert-igs');
+      const contentViewModel = document.getElementById('content-view-model');
+      const contentConvertIgs = document.getElementById('content-convert-igs');
+
+      if (tabViewModel && tabConvertIgs) {
+        tabViewModel.addEventListener('click', function () {
+          tabViewModel.classList.add('active');
+          tabConvertIgs.classList.remove('active');
+          contentViewModel.style.display = 'block';
+          contentConvertIgs.style.display = 'none';
+        });
+
+        tabConvertIgs.addEventListener('click', function () {
+          tabViewModel.classList.remove('active');
+          tabConvertIgs.classList.add('active');
+          contentViewModel.style.display = 'none';
+          contentConvertIgs.style.display = 'block';
+        });
+      } else {
+        console.error("Tab elements not found");
+      }
+    }
+
+    // Initialize file upload functionality for pre-defined models
+    function initializeFileUploads() {
+      // Setup file input listeners for predefined models
+      models.forEach(model => {
+        const fileInput = document.getElementById(model.fileInput);
+        if (fileInput) {
+          fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+              loadSTLFromFile(model.id, file);
+            }
+          });
+        }
+      });
+    }
+
+    // Initialize the custom model uploader
+    function initializeCustomModelUpload() {
+      const dropAreaModel = document.getElementById('drop-area-model');
+      const fileUploadModel = document.getElementById('file-upload-model');
+      const fileUploadBtnModel = document.getElementById('file-upload-btn-model');
+
+      if (!dropAreaModel || !fileUploadModel || !fileUploadBtnModel) {
+        console.error("Custom model upload elements not found");
+        return;
+      }
+
+      // Set up the drag and drop listeners for model viewing
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropAreaModel.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropAreaModel.addEventListener(eventName, highlight, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropAreaModel.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        dropAreaModel.classList.add('drag-over');
+      }
+
+      function unhighlight() {
+        dropAreaModel.classList.remove('drag-over');
+      }
+
+      dropAreaModel.addEventListener('drop', handleModelFileDrop, false);
+
+      function handleModelFileDrop(e) {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleModelFileUpload(file);
+      }
+
+      fileUploadBtnModel.addEventListener('click', function (e) {
+        e.preventDefault();
+        fileUploadModel.click();
+      });
+
+      fileUploadModel.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          handleModelFileUpload(this.files[0]);
+        }
+      });
+    }
+
+    // Initialize IGS conversion functionality
+    function initializeIgsConversion() {
+      const dropAreaConvert = document.getElementById('drop-area-convert');
+      const fileUploadConvert = document.getElementById('file-upload-convert');
+      const fileUploadBtnConvert = document.getElementById('file-upload-btn-convert');
+      const convertButton = document.getElementById('convert-button');
+
+      if (!dropAreaConvert || !fileUploadConvert || !fileUploadBtnConvert || !convertButton) {
+        console.error("IGS conversion elements not found");
+        return;
+      }
+
+      // Set up the drag and drop listeners for IGS conversion
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropAreaConvert.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropAreaConvert.addEventListener(eventName, function () {
+          dropAreaConvert.classList.add('drag-over');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropAreaConvert.addEventListener(eventName, function () {
+          dropAreaConvert.classList.remove('drag-over');
+        }, false);
+      });
+
+      dropAreaConvert.addEventListener('drop', function (e) {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleConvertFileUpload(file);
+      }, false);
+
+      fileUploadBtnConvert.addEventListener('click', function (e) {
+        e.preventDefault();
+        fileUploadConvert.click();
+      });
+
+      fileUploadConvert.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          handleConvertFileUpload(this.files[0]);
+        }
+      });
+
+      convertButton.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (!window.igsFile) {
+          showErrorMessage(document.getElementById('error-message-convert'), "Please upload an IGS file first.");
+          return;
+        }
+
+        // Show conversion progress
+        const conversionProgress = document.querySelector('.conversion-progress');
+        const progressBar = document.getElementById('conversion-progress-bar');
+        const progressStatus = document.getElementById('progress-status');
+        const errorMessageConvert = document.getElementById('error-message-convert');
+
+        conversionProgress.style.display = 'block';
+        progressBar.style.width = '10%';
+        progressStatus.textContent = 'Starting conversion...';
+        errorMessageConvert.style.display = 'none';
+
+        // Simulate conversion process
+        simulateIgsToStlConversion(window.igsFile);
+      });
+    }
+
+    // Global variables
+    window.igsFile = null;
+
+    // Handle model file upload
+    function handleModelFileUpload(file) {
+      const errorMessageModel = document.getElementById('error-message-model');
+      const successMessageModel = document.getElementById('success-message-model');
+      const customViewerContainer = document.querySelector('.custom-viewer-container');
+      const customModelTitle = document.getElementById('custom-model-title');
+      const downloadCustomModel = document.getElementById('download-custom-model');
+
+      // Reset any previous messages
+      if (errorMessageModel) errorMessageModel.style.display = 'none';
+      if (successMessageModel) successMessageModel.style.display = 'none';
+
+      if (!file) return;
+
+      // Check if file is supported
+      const fileExt = file.name.split('.').pop().toLowerCase();
+
+      if (fileExt === 'stl') {
+        // STL file - load directly
+        if (successMessageModel) showSuccessMessage(successMessageModel, `File "${file.name}" loaded successfully`);
+        if (customModelTitle) customModelTitle.textContent = file.name;
+        if (customViewerContainer) customViewerContainer.style.display = 'block';
+        loadSTLIntoCustomViewer(file);
+
+        // Create a URL for downloading
+        if (downloadCustomModel) {
+          const objectUrl = URL.createObjectURL(file);
+          downloadCustomModel.href = objectUrl;
+          downloadCustomModel.download = file.name;
+          downloadCustomModel.style.display = 'block';
+          downloadCustomModel.setAttribute('download', file.name);
+        }
+
+      } else if (fileExt === 'igs') {
+        // IGS file - show a message to use the converter tab
+        if (errorMessageModel) showErrorMessage(errorMessageModel, `IGS file detected. Please use the "Convert IGS to STL" tab to convert it first.`);
+
+        // Switch to the converter tab
+        const tabConvertIgs = document.getElementById('tab-convert-igs');
+        if (tabConvertIgs) tabConvertIgs.click();
+
+        // Also load the file into the converter
+        const fileUploadConvert = document.getElementById('file-upload-convert');
+        if (fileUploadConvert) {
+          try {
+            // Create a DataTransfer object and add the file
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+
+            // Set the files property of the file input
+            fileUploadConvert.files = dataTransfer.files;
+
+            // Trigger the change event manually
+            handleConvertFileUpload(file);
+          } catch (error) {
+            console.error("Could not transfer file to converter:", error);
+          }
+        }
+      } else {
+        if (errorMessageModel) showErrorMessage(errorMessageModel, `Unsupported file format: .${fileExt}. Please upload an STL or IGS file.`);
+      }
+    }
+
+    // Handler for IGS file upload in converter section
+    function handleConvertFileUpload(file) {
+      const errorMessageConvert = document.getElementById('error-message-convert');
+      const successMessageConvert = document.getElementById('success-message-convert');
+      const convertButton = document.getElementById('convert-button');
+
+      // Reset messages
+      if (errorMessageConvert) errorMessageConvert.style.display = 'none';
+      if (successMessageConvert) successMessageConvert.style.display = 'none';
+
+      if (!file) return;
+
+      // Check if file is IGS
+      const fileExt = file.name.split('.').pop().toLowerCase();
+      if (fileExt !== 'igs') {
+        if (errorMessageConvert) showErrorMessage(errorMessageConvert, `Unsupported file format: .${fileExt}. Please upload an IGS file.`);
+        if (convertButton) convertButton.disabled = true;
+        return;
+      }
+
+      // Store the file for conversion
+      window.igsFile = file;
+      if (convertButton) convertButton.disabled = false;
+      if (successMessageConvert) showSuccessMessage(successMessageConvert, `File "${file.name}" loaded successfully. Ready for conversion.`);
+    }
+
+    // Simulation of IGS to STL conversion
+    function simulateIgsToStlConversion(igsFile) {
+      const quality = document.getElementById('option-quality');
+      const center = document.getElementById('option-center');
+      const optimize = document.getElementById('option-optimize');
+      const progressBar = document.getElementById('conversion-progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+
+      if (!quality || !center || !optimize || !progressBar || !progressStatus) {
+        console.error("Conversion elements not found");
+        return;
+      }
+
+      let qualityValue = quality.value;
+      let centerChecked = center.checked;
+      let optimizeChecked = optimize.checked;
+
+      let progress = 10;
+      const interval = setInterval(function () {
+        progress += 5;
+        progressBar.style.width = `${progress}%`;
+
+        if (progress <= 30) {
+          progressStatus.textContent = 'Reading IGS file...';
+        } else if (progress <= 60) {
+          progressStatus.textContent = 'Generating mesh geometry...';
+        } else if (progress <= 90) {
+          progressStatus.textContent = 'Optimizing STL output...';
+        } else {
+          progressStatus.textContent = 'Finalizing...';
+        }
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          finishConversion(igsFile);
+        }
+      }, (qualityValue === 'high' ? 100 : (qualityValue === 'medium' ? 70 : 40)));
+    }
+
+    // Finalize the conversion process
+    function finishConversion(igsFile) {
+      const progressStatus = document.getElementById('progress-status');
+      const successMessageConvert = document.getElementById('success-message-convert');
+
+      if (!progressStatus || !successMessageConvert) {
+        console.error("Conversion completion elements not found");
+        return;
+      }
+
+      progressStatus.textContent = 'Conversion complete!';
+
+      // Create a placeholder STL file (in a real app, this would be the result of conversion)
+      const stlFileName = igsFile.name.replace('.igs', '.stl');
+
+      showSuccessMessage(successMessageConvert, `
+       Conversion successful! The file has been converted to STL format.
+       <br><br>
+       <a href="#" id="view-converted-model" class="file-upload-btn" style="text-decoration: none;">View 3D Model</a>
+       <a href="#" id="download-converted-model" class="file-upload-btn" style="text-decoration: none; margin-left: 10px;">Download STL</a>
+      `);
+
+      // Set up event handlers for the newly created links
+      setTimeout(() => {
+        const viewConvertedBtn = document.getElementById('view-converted-model');
+        const downloadConvertedBtn = document.getElementById('download-converted-model');
+
+        if (viewConvertedBtn) {
+          viewConvertedBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Switch to the view model tab
+            const tabViewModel = document.getElementById('tab-view-model');
+            if (tabViewModel) tabViewModel.click();
+
+            // Create a sample STL file
+            createSampleStlFile(stlFileName);
+          });
+        }
+
+        if (downloadConvertedBtn) {
+          downloadConvertedBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Create and download a sample STL file
+            downloadSampleStlFile(stlFileName);
+          });
+        }
+      }, 100);
+    }
+
+    // Create a sample STL file for demonstration
+    function createSampleStlFile(filename) {
+      const customModelTitle = document.getElementById('custom-model-title');
+      const customViewerContainer = document.querySelector('.custom-viewer-container');
+      const successMessageModel = document.getElementById('success-message-model');
+
+      if (!customModelTitle || !customViewerContainer || !successMessageModel) {
+        console.error("Sample STL display elements not found");
+        return;
+      }
+
+      // Generate a simple cube STL model on-the-fly
+      const stlData = generateSampleStlCube();
+
+      // Create a Blob from the STL data
+      const blob = new Blob([stlData], { type: 'application/octet-stream' });
+
+      // Load the sample STL into the viewer
+      customModelTitle.textContent = filename;
+      customViewerContainer.style.display = 'block';
+      loadSTLIntoCustomViewer(blob);
+
+      // Show success message
+      showSuccessMessage(successMessageModel, `Converted file "${filename}" loaded successfully`);
+    }
+
+    // Download a sample STL file
+    function downloadSampleStlFile(filename) {
+      // Generate a simple cube STL model on-the-fly
+      const stlData = generateSampleStlCube();
+
+      // Create a Blob from the STL data
+      const blob = new Blob([stlData], { type: 'application/octet-stream' });
+
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(function () {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
+
+    // Function to create a 3D viewer for a single model loaded from a file
+    function loadSTLIntoCustomViewer(file) {
+      const container = document.getElementById('custom-viewer');
+
+      if (!container) {
+        console.error("Custom viewer container not found");
+        return;
+      }
+
+      // Clear existing content
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+
+      // Add controls div
+      const controlsDiv = document.createElement('div');
+      controlsDiv.className = 'model-controls';
+      controlsDiv.textContent = 'Left-click: Rotate | Right-click: Pan | Scroll: Zoom';
+      container.appendChild(controlsDiv);
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Create scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x222222);
+
+      // Create camera
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 20000);
+      camera.position.set(0, 0, 1000);
+
+      // Create renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Add lights with more dramatic lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight1.position.set(200, 200, 200);
+      directionalLight1.castShadow = true;
+      // Configure shadow properties
+      directionalLight1.shadow.mapSize.width = 1024;
+      directionalLight1.shadow.mapSize.height = 1024;
+      directionalLight1.shadow.camera.near = 0.5;
+      directionalLight1.shadow.camera.far = 5000;
+      scene.add(directionalLight1);
+
+      const directionalLight2 = new THREE.DirectionalLight(0x6666ff, 0.4);
+      directionalLight2.position.set(-100, 100, -100);
+      scene.add(directionalLight2);
+
+      const directionalLight3 = new THREE.DirectionalLight(0xff6666, 0.4);
+      directionalLight3.position.set(100, -100, -100);
+      scene.add(directionalLight3);
+
+      // Add OrbitControls
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.25;
+
+      // Create a FileReader to read the STL file
+      const reader = new FileReader();
+
+      // Set up the loader
+      const loader = new THREE.STLLoader();
+
+      // Add a loading indicator
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'loading-indicator';
+      loadingDiv.textContent = 'Processing 3D model...';
+      container.appendChild(loadingDiv);
+
+      reader.onload = function (e) {
+        try {
+          // Parse the STL file from the FileReader result
+          const geometry = loader.parse(e.target.result);
+
+          // Remove loading indicator
+          container.removeChild(loadingDiv);
+
+          // Center the geometry
+          geometry.computeBoundingBox();
+          const boundingBox = geometry.boundingBox;
+          const center = new THREE.Vector3();
+          boundingBox.getCenter(center);
+          geometry.translate(-center.x, -center.y, -center.z);
+
+          // Scale model to fit view
+          const maxDim = Math.max(
+            boundingBox.max.x - boundingBox.min.x,
+            boundingBox.max.y - boundingBox.min.y,
+            boundingBox.max.z - boundingBox.min.z
+          );
+          const scale = 250 / maxDim;
+          geometry.scale(scale, scale, scale);
+
+          // Create more colorful material with better lighting
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x2194ce,
+            specular: 0x111111,
+            shininess: 100,
+            flatShading: false,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.95,
+            emissive: 0x072534
+          });
+
+          // Create the mesh and add it to the scene
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          scene.add(mesh);
+
+          // Add measurement tool panel to the container
+          addMeasurementTools(container, scene, camera, renderer, controls, geometry, boundingBox, scale);
+
+          // Add wireframe overlay for better visual detail
+          const wireframeGeometry = new THREE.EdgesGeometry(geometry);
+          const wireframeMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.15
+          });
+          const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+          scene.add(wireframe);
+
+          // Display measurements
+          displayMeasurements(
+            'custom-viewer',
+            file.name || "Sample Model",
+            boundingBox.max.x - boundingBox.min.x,
+            boundingBox.max.y - boundingBox.min.y,
+            boundingBox.max.z - boundingBox.min.z,
+            scale
+          );
+
+          // Set camera position based on model dimensions
+          camera.position.z = maxDim * 2;
+          controls.update();
+
+          console.log("Successfully loaded custom file: " + (file.name || "Sample Model"));
+        } catch (error) {
+          console.error("Error parsing STL file:", error);
+
+          // Remove loading indicator
+          if (container.contains(loadingDiv)) {
+            container.removeChild(loadingDiv);
+          }
+
+          // Show an error message
+          const errorMessageModel = document.getElementById('error-message-model');
+          if (errorMessageModel) {
+            showErrorMessage(errorMessageModel, `Error parsing STL file: ${error.message}`);
+          }
+
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'placeholder-message';
+          errorDiv.innerHTML = `
+            <h3>Error Loading File</h3>
+            <p>Could not parse the file as an STL model. Please make sure you've selected a valid STL file.</p>
+          `;
+          container.appendChild(errorDiv);
+        }
+      };
+
+      reader.onerror = function () {
+        console.error("Error reading file");
+
+        // Remove loading indicator
+        if (container.contains(loadingDiv)) {
+          container.removeChild(loadingDiv);
+        }
+
+        const errorMessageModel = document.getElementById('error-message-model');
+        if (errorMessageModel) {
+          showErrorMessage(errorMessageModel, "Error reading file. Please try again.");
+        }
+      };
+
+      // Read the file as an ArrayBuffer (binary data)
+      reader.readAsArrayBuffer(file);
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Handle window resize
+      window.addEventListener('resize', function () {
+        const newWidth = container.clientWidth;
+        const newHeight = container.clientHeight;
+        camera.aspect = newWidth / newHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newWidth, newHeight);
+      });
+
+      // Just after this line: scene.add(wireframe);
+
+      // Add "Show Dimensions" button - make sure it's visible and properly positioned
+      console.log("Adding dimensions button to custom viewer");
+      const modelButtons = document.createElement('div');
+      modelButtons.className = 'model-buttons';
+      modelButtons.style.position = 'absolute';
+      modelButtons.style.bottom = '10px';
+      modelButtons.style.left = '10px';
+      modelButtons.style.zIndex = '1000';
+      modelButtons.innerHTML = `
+        <button class="model-button" id="show-dimensions-custom-viewer">
+          <i class="fas fa-ruler-combined"></i> Show Dimensions
+        </button>
+      `;
+      container.appendChild(modelButtons);
+
+      // Add material calculation panel
+      const materialPanel = document.createElement('div');
+      materialPanel.className = 'material-calc-panel';
+      materialPanel.id = 'material-panel-custom-viewer';
+      materialPanel.style.position = 'absolute';
+      materialPanel.style.top = '10px';
+      materialPanel.style.right = '10px';
+      materialPanel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+      materialPanel.style.padding = '15px';
+      materialPanel.style.borderRadius = '8px';
+      materialPanel.style.zIndex = '1000';
+      materialPanel.style.width = '250px';
+      materialPanel.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+      materialPanel.style.maxHeight = '80%';
+      materialPanel.style.overflowY = 'auto';
+      materialPanel.style.display = 'none';
+      materialPanel.innerHTML = `
+        <h4><i class="fas fa-calculator"></i> Material Calculation</h4>
+        <div class="dimensions-list">
+          <div class="dimension-item">
+            <span class="dimension-name">Length (L):</span>
+            <span class="dimension-value" id="length-custom-viewer">0.00 mm</span>
+          </div>
+          <div class="dimension-item">
+            <span class="dimension-name">Width (W):</span>
+            <span class="dimension-value" id="width-custom-viewer">0.00 mm</span>
+          </div>
+          <div class="dimension-item">
+            <span class="dimension-name">Thickness (T):</span>
+            <span class="dimension-value" id="thickness-custom-viewer">0.00 mm</span>
+          </div>
+          <div class="dimension-item">
+            <span class="dimension-name">Volume:</span>
+            <span class="dimension-value" id="volume-custom-viewer">0.00 mm³</span>
+          </div>
+        </div>
+        <div class="material-params">
+          <label for="density-custom-viewer">Material Density (kg/mm³):</label>
+          <input type="number" id="density-custom-viewer" value="0.00000785" step="0.00000001" placeholder="Density in kg/mm³">
+          
+          <label for="price-custom-viewer">Price per kg (USD):</label>
+          <input type="number" id="price-custom-viewer" value="5.00" step="0.01" placeholder="Price in USD">
+          
+          <button class="material-calc-btn" id="calc-cost-custom-viewer">Calculate Cost</button>
+        </div>
+        <div class="cost-result" id="cost-result-custom-viewer"></div>
+      `;
+      container.appendChild(materialPanel);
+
+      // Log for debugging
+      console.log("Material panel added to custom viewer");
+
+      // Setup event listeners - using setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        const showDimensionsBtn = document.getElementById('show-dimensions-custom-viewer');
+        const calcCostBtn = document.getElementById('calc-cost-custom-viewer');
+
+        if (showDimensionsBtn) {
+          showDimensionsBtn.addEventListener('click', function () {
+            const panel = document.getElementById('material-panel-custom-viewer');
+            if (panel) {
+              // Toggle visibility instead of class for more reliable behavior
+              if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                // Calculate dimensions and show on model
+                calculateAndShowDimensions(geometry, scene, boundingBox, scale, 'custom-viewer');
+              } else {
+                panel.style.display = 'none';
+                // Clear dimension indicators
+                clearDimensionIndicators();
+              }
+            } else {
+              console.error("Material panel not found");
+            }
+          });
+          console.log("Dimensions button event listener added");
+        } else {
+          console.error("Show dimensions button not found");
+        }
+
+        if (calcCostBtn) {
+          calcCostBtn.addEventListener('click', function () {
+            calculateMaterialCost('custom-viewer');
+          });
+          console.log("Calculate cost button event listener added");
+        } else {
+          console.error("Calculate cost button not found");
+        }
+      }, 100);
+    }
+
+    // Function to generate a sample STL cube
+    function generateSampleStlCube() {
+      // This creates a binary STL file representing a cube
+      const size = 50; // Size of the cube
+      const vertices = [
+        [-size, -size, -size], [size, -size, -size], [size, size, -size], [-size, size, -size],
+        [-size, -size, size], [size, -size, size], [size, size, size], [-size, size, size]
+      ];
+
+      const faces = [
+        [0, 1, 2], [0, 2, 3], // Bottom face
+        [4, 5, 6], [4, 6, 7], // Top face
+        [0, 1, 5], [0, 5, 4], // Front face
+        [2, 3, 7], [2, 7, 6], // Back face
+        [0, 3, 7], [0, 7, 4], // Left face
+        [1, 2, 6], [1, 6, 5]  // Right face
+      ];
+
+      // Create binary STL file
+      const buffer = new ArrayBuffer(84 + (50 * faces.length)); // Header + 50 bytes per face
+      const view = new DataView(buffer);
+
+      // STL header (80 bytes)
+      for (let i = 0; i < 80; i++) {
+        view.setUint8(i, 0);
+      }
+
+      // Number of triangles
+      view.setUint32(80, faces.length, true);
+
+      let offset = 84;
+
+      // Add each face
+      for (let i = 0; i < faces.length; i++) {
+        const face = faces[i];
+
+        // Calculate normal (simplified - just using the first vertex as normal)
+        view.setFloat32(offset, 0, true); offset += 4;
+        view.setFloat32(offset, 0, true); offset += 4;
+        view.setFloat32(offset, 1, true); offset += 4;
+
+        // Add vertices
+        for (let j = 0; j < 3; j++) {
+          const vertex = vertices[face[j]];
+          view.setFloat32(offset, vertex[0], true); offset += 4;
+          view.setFloat32(offset, vertex[1], true); offset += 4;
+          view.setFloat32(offset, vertex[2], true); offset += 4;
+        }
+
+        // Attribute byte count (unused)
+        view.setUint16(offset, 0, true); offset += 2;
+      }
+
+      return buffer;
+    }
+
+    // Function to display measurements for a model
+    function displayMeasurements(containerId, fileName, width, height, depth, scale) {
+      // Get the container
+      const container = document.getElementById(containerId);
+
+      if (!container) {
+        console.error(`Container with ID ${containerId} not found`);
+        return;
+      }
+
+      // Look for existing measurement div
+      const measurementsId = containerId === 'custom-viewer' ? 'custom-measurements' : `measurements-${containerId.split('-')[1]}`;
+      let measurementsDiv = document.getElementById(measurementsId);
+
+      if (!measurementsDiv) {
+        console.error(`Measurements container with ID ${measurementsId} not found`);
+        return;
+      }
+
+      // Original dimensions (before scaling)
+      const originalWidth = (width / scale).toFixed(2);
+      const originalHeight = (height / scale).toFixed(2);
+      const originalDepth = (depth / scale).toFixed(2);
+      const volume = (originalWidth * originalHeight * originalDepth).toFixed(2);
+
+      // Update content
+      measurementsDiv.innerHTML = `
+        <h4>Model Measurements</h4>
+        <div class="measurement-item">
+          <span>Width:</span> <span>${originalWidth} mm</span>
+        </div>
+        <div class="measurement-item">
+          <span>Height:</span> <span>${originalHeight} mm</span>
+        </div>
+        <div class="measurement-item">
+          <span>Depth:</span> <span>${originalDepth} mm</span>
+        </div>
+        <div class="measurement-item">
+          <span>Volume:</span> <span>${volume} mm³</span>
+        </div>
+      `;
+    }
+
+    // Utility functions for showing messages
+    function showErrorMessage(element, message) {
+      if (!element) return;
+      element.innerHTML = message;
+      element.style.display = 'block';
+    }
+
+    function showSuccessMessage(element, message) {
+      if (!element) return;
+      element.innerHTML = message;
+      element.style.display = 'block';
+    }
+
+    // Function to add measurement tools to a viewer
+    function addMeasurementTools(container, scene, camera, renderer, controls, geometry, boundingBox, scale) {
+      // Create measurement panel
+      const panel = document.createElement('div');
+      panel.className = 'measurement-panel active';
+      panel.innerHTML = `
+        <h4><i class="fas fa-ruler"></i> Measurement Tools</h4>
+        <button id="measure-point" title="Click on model to show coordinates"><i class="fas fa-map-marker-alt"></i> Point</button>
+        <button id="measure-distance" title="Click two points to measure distance"><i class="fas fa-arrows-alt-h"></i> Distance</button>
+        <button id="measure-angle" title="Click three points to measure angle"><i class="fas fa-drafting-compass"></i> Angle</button>
+        <button id="show-auto-dimensions" title="Show automatic dimensions"><i class="fas fa-ruler-combined"></i> Auto Dimensions</button>
+        <button id="clear-measure" title="Clear all measurements"><i class="fas fa-trash-alt"></i> Clear</button>
+        <div class="measurement-result">
+          <p>Click on the model to measure</p>
+        </div>
+      `;
+      container.appendChild(panel);
+
+      // Create crosshair for targeting
+      const crosshair = document.createElement('div');
+      crosshair.className = 'measurement-crosshair';
+      container.appendChild(crosshair);
+
+      // Setup measurement variables
+      let measureMode = 'none';
+      let measurePoints = [];
+      let measureMarkers = [];
+      let measureLines = [];
+
+      // Get result display
+      const resultDiv = panel.querySelector('.measurement-result');
+
+      // Raycaster for clicking on the model
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      // Setup button events
+      const pointBtn = panel.querySelector('#measure-point');
+      const distanceBtn = panel.querySelector('#measure-distance');
+      const angleBtn = panel.querySelector('#measure-angle');
+      const clearBtn = panel.querySelector('#clear-measure');
+      const autoDimensionsBtn = panel.querySelector('#show-auto-dimensions');
+
+      pointBtn.addEventListener('click', () => {
+        setMeasureMode('point');
+        pointBtn.classList.add('active');
+        distanceBtn.classList.remove('active');
+        angleBtn.classList.remove('active');
+        autoDimensionsBtn.classList.remove('active');
+      });
+
+      distanceBtn.addEventListener('click', () => {
+        setMeasureMode('distance');
+        pointBtn.classList.remove('active');
+        distanceBtn.classList.add('active');
+        angleBtn.classList.remove('active');
+        autoDimensionsBtn.classList.remove('active');
+      });
+
+      angleBtn.addEventListener('click', () => {
+        setMeasureMode('angle');
+        pointBtn.classList.remove('active');
+        distanceBtn.classList.remove('active');
+        angleBtn.classList.add('active');
+        autoDimensionsBtn.classList.remove('active');
+      });
+
+      clearBtn.addEventListener('click', () => {
+        clearMeasurements();
+        resultDiv.innerHTML = '<p>Click on the model to measure</p>';
+      });
+
+      // New button for auto dimensions
+      if (autoDimensionsBtn) {
+        autoDimensionsBtn.addEventListener('click', () => {
+          // Toggle active state for styling
+          autoDimensionsBtn.classList.toggle('active');
+
+          if (autoDimensionsBtn.classList.contains('active')) {
+            // Clear any existing measurements
+            clearMeasurements();
+
+            // Get the original (pre-scaled) dimensions
+            const length = (boundingBox.max.x - boundingBox.min.x) / scale;
+            const width = (boundingBox.max.y - boundingBox.min.y) / scale;
+            const thickness = (boundingBox.max.z - boundingBox.min.z) / scale;
+            const volume = length * width * thickness;
+
+            // Format dimensions to fixed decimal places
+            const lengthStr = length.toFixed(2) + ' mm';
+            const widthStr = width.toFixed(2) + ' mm';
+            const thicknessStr = thickness.toFixed(2) + ' mm';
+            const volumeStr = volume.toFixed(2) + ' mm³';
+
+            // Show auto dimensions - calculate from the boundingBox
+            calculateAndShowDimensions(geometry, scene, boundingBox, scale, containerId || 'custom-viewer');
+
+            // Also show the material calculation panel
+            const materialPanel = document.getElementById(`material-panel-${containerId || 'custom-viewer'}`);
+            if (materialPanel) {
+              materialPanel.style.display = 'block';
+
+              // Update the panel with the calculated values - using the element IDs
+              const lengthElem = document.getElementById(`length-${containerId || 'custom-viewer'}`);
+              const widthElem = document.getElementById(`width-${containerId || 'custom-viewer'}`);
+              const thicknessElem = document.getElementById(`thickness-${containerId || 'custom-viewer'}`);
+              const volumeElem = document.getElementById(`volume-${containerId || 'custom-viewer'}`);
+
+              if (lengthElem) lengthElem.textContent = lengthStr;
+              if (widthElem) widthElem.textContent = widthStr;
+              if (thicknessElem) thicknessElem.textContent = thicknessStr;
+              if (volumeElem) volumeElem.textContent = volumeStr;
+
+              // Save the values as data attributes for later use in cost calculation
+              materialPanel.dataset.length = length;
+              materialPanel.dataset.width = width;
+              materialPanel.dataset.thickness = thickness;
+              materialPanel.dataset.volume = volume;
+
+              console.log("Updated material panel with dimensions:", length, width, thickness, volume);
+            } else {
+              console.error("Material panel not found for:", containerId || 'custom-viewer');
+            }
+
+            resultDiv.innerHTML = `
+              <p>Auto dimensions:</p>
+              <p>L: ${lengthStr}</p>
+              <p>W: ${widthStr}</p>
+              <p>T: ${thicknessStr}</p>
+              <p>V: ${volumeStr}</p>
+            `;
+
+            // Also update the Model Measurements section at the bottom if it exists
+            updateModelMeasurementsSection(length, width, thickness, volume);
+          } else {
+            // Clear auto dimensions
+            clearDimensionIndicators();
+
+            // Also hide the material calculation panel
+            const materialPanel = document.getElementById(`material-panel-${containerId || 'custom-viewer'}`);
+            if (materialPanel) {
+              materialPanel.style.display = 'none';
+            }
+
+            resultDiv.innerHTML = '<p>Auto dimensions cleared</p>';
+          }
+        });
+      }
+
+      // Set measurement mode
+      function setMeasureMode(mode) {
+        measureMode = mode;
+        measurePoints = [];
+        clearMeasurements();
+        if (mode !== 'none') {
+          crosshair.style.display = 'block';
+          resultDiv.innerHTML = '<p>Click on the model to measure</p>';
+        } else {
+          crosshair.style.display = 'none';
+        }
+      }
+
+      // Clear measurements
+      function clearMeasurements() {
+        // Remove all markers and lines
+        measureMarkers.forEach(marker => scene.remove(marker));
+        measureLines.forEach(line => scene.remove(line));
+        measureMarkers = [];
+        measureLines = [];
+      }
+
+      // Mouse move handler for crosshair
+      container.addEventListener('mousemove', function (event) {
+        if (measureMode === 'none') return;
+
+        // Get mouse position
+        const rect = renderer.domElement.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // Position crosshair
+        crosshair.style.left = x + 'px';
+        crosshair.style.top = y + 'px';
+      });
+
+      // Click handler for measurements
+      container.addEventListener('click', function (event) {
+        if (measureMode === 'none') return;
+
+        // Get mouse position in normalized device coordinates
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        // Cast ray from camera through mouse position
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children);
+
+        // If we hit something, add a point
+        if (intersects.length > 0) {
+          const point = intersects[0].point.clone();
+          const pointWorld = point.clone();
+
+          // Convert point back to original scale
+          const originalPoint = new THREE.Vector3(
+            point.x / scale,
+            point.y / scale,
+            point.z / scale
+          );
+
+          // Add point marker to the scene
+          const markerGeometry = new THREE.SphereGeometry(3, 16, 16);
+          const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+          const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+          marker.position.copy(point);
+          scene.add(marker);
+          measureMarkers.push(marker);
+
+          // Add point to list
+          measurePoints.push({
+            scene: point,
+            original: originalPoint
+          });
+
+          // Handle different measurement modes
+          if (measureMode === 'point') {
+            // Format point values to 2 decimal places
+            const px = originalPoint.x.toFixed(2);
+            const py = originalPoint.y.toFixed(2);
+            const pz = originalPoint.z.toFixed(2);
+
+            resultDiv.innerHTML = `
+              <p>Point coordinates:</p>
+              <p>X: ${px} mm</p>
+              <p>Y: ${py} mm</p>
+              <p>Z: ${pz} mm</p>
+            `;
+          }
+          else if (measureMode === 'distance' && measurePoints.length === 2) {
+            // Calculate distance between two points
+            const p1 = measurePoints[0].original;
+            const p2 = measurePoints[1].original;
+            const distance = p1.distanceTo(p2);
+
+            // Draw line between points
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+              measurePoints[0].scene,
+              measurePoints[1].scene
+            ]);
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            scene.add(line);
+            measureLines.push(line);
+
+            // Format distance to 2 decimal places
+            const formattedDistance = distance.toFixed(2);
+
+            resultDiv.innerHTML = `
+              <p>Distance:</p>
+              <p>${formattedDistance} mm</p>
+            `;
+
+            // NEW: Add text label above the line in 3D space
+            addMeasurementLabel(scene,
+              measurePoints[0].scene,
+              measurePoints[1].scene,
+              `${formattedDistance} mm`,
+              measureMarkers);
+
+            // Reset points for next measurement
+            measurePoints = [];
+          }
+          else if (measureMode === 'angle' && measurePoints.length === 3) {
+            // Calculate angle between three points
+            const p1 = measurePoints[0].scene;
+            const p2 = measurePoints[1].scene;
+            const p3 = measurePoints[2].scene;
+
+            // Calculate vectors
+            const v1 = new THREE.Vector3().subVectors(p1, p2);
+            const v2 = new THREE.Vector3().subVectors(p3, p2);
+
+            // Calculate angle in radians and convert to degrees
+            const angle = v1.angleTo(v2);
+            const degrees = angle * (180 / Math.PI);
+
+            // Draw lines
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+
+            const lineGeometry1 = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+            const line1 = new THREE.Line(lineGeometry1, lineMaterial);
+            scene.add(line1);
+            measureLines.push(line1);
+
+            const lineGeometry2 = new THREE.BufferGeometry().setFromPoints([p2, p3]);
+            const line2 = new THREE.Line(lineGeometry2, lineMaterial);
+            scene.add(line2);
+            measureLines.push(line2);
+
+            // Format angle to 2 decimal places
+            const formattedAngle = degrees.toFixed(2);
+
+            resultDiv.innerHTML = `
+              <p>Angle:</p>
+              <p>${formattedAngle}°</p>
+            `;
+
+            // NEW: Add text label for the angle at the middle point in 3D space
+            addAngleLabel(scene, p1, p2, p3, `${formattedAngle}°`, measureMarkers);
+
+            // Reset points for next measurement
+            measurePoints = [];
+          }
+        }
+      });
+    }
+
+    // Initialize all components 
+    // This is a fallback in case DOMContentLoaded doesn't fire
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      setTimeout(initializeUI, 1);
+    }
+
+    // Multi-file viewer functionality
+    const toggleMultiFileBtn = document.getElementById('toggle-multi-file');
+    const multiFileContent = document.getElementById('multi-file-content');
+    const addFileInputBtn = document.getElementById('add-file-input');
+    const multiFileInputs = document.getElementById('multi-file-inputs');
+    const loadMultipleFilesBtn = document.getElementById('load-multiple-files');
+    const multiViewersContainer = document.getElementById('multi-viewers-container');
+    const modelComparisonTools = document.getElementById('model-comparison-tools');
+
+    // Store loaded models and their viewers for comparison features
+    const loadedModels = [];
+    const modelViewers = [];
+
+    // Toggle multi-file content visibility
+    if (toggleMultiFileBtn) {
+      toggleMultiFileBtn.addEventListener('click', function () {
+        if (multiFileContent.classList.contains('active')) {
+          multiFileContent.classList.remove('active');
+          this.innerHTML = '<i class="fas fa-plus-circle"></i> Open Multi-File Viewer';
+
+          // Also hide viewers if they're shown
+          multiViewersContainer.classList.remove('active');
+          modelComparisonTools.classList.remove('active');
+        } else {
+          multiFileContent.classList.add('active');
+          this.innerHTML = '<i class="fas fa-minus-circle"></i> Close Multi-File Viewer';
+        }
+      });
+    }
+
+    // Add new file input row
+    if (addFileInputBtn) {
+      addFileInputBtn.addEventListener('click', function () {
+        const fileRows = multiFileInputs.querySelectorAll('.file-input-row');
+        const newIndex = fileRows.length;
+
+        const newRow = document.createElement('div');
+        newRow.className = 'file-input-row';
+        newRow.innerHTML = `
+          <div class="file-input-label">Model ${newIndex + 1}:</div>
+          <div class="file-input-wrapper">
+            <div class="file-input-text">No file chosen</div>
+            <input type="file" class="multi-stl-input" accept=".stl" data-index="${newIndex}">
+          </div>
+        `;
+
+        multiFileInputs.appendChild(newRow);
+
+        // Attach event listeners to the new file input
+        const newInput = newRow.querySelector('input[type="file"]');
+        attachFileInputListener(newInput);
+      });
+    }
+
+    // Function to attach listeners to file inputs
+    function attachFileInputListener(input) {
+      const textDisplay = input.previousElementSibling;
+
+      input.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          textDisplay.textContent = this.files[0].name;
+        } else {
+          textDisplay.textContent = 'No file chosen';
+        }
+      });
+    }
+
+    // Attach listeners to initial file inputs
+    document.querySelectorAll('.multi-stl-input').forEach(input => {
+      attachFileInputListener(input);
+    });
+
+    // Load and display multiple STL files
+    if (loadMultipleFilesBtn) {
+      loadMultipleFilesBtn.addEventListener('click', function () {
+        const fileInputs = document.querySelectorAll('.multi-stl-input');
+        let hasFiles = false;
+
+        // Check if any files are selected
+        fileInputs.forEach(input => {
+          if (input.files.length > 0) {
+            hasFiles = true;
+          }
+        });
+
+        if (!hasFiles) {
+          alert('Please select at least one STL file to view.');
+          return;
+        }
+
+        // Clear previous viewers and models
+        multiViewersContainer.innerHTML = '';
+        loadedModels.length = 0;
+        modelViewers.length = 0;
+
+        // Create a viewer for each selected file
+        fileInputs.forEach((input, index) => {
+          if (input.files.length > 0) {
+            const file = input.files[0];
+
+            // Create viewer container
+            const viewerItem = document.createElement('div');
+            viewerItem.className = 'multi-viewer-item';
+            viewerItem.innerHTML = `
+              <div class="multi-viewer-title">${file.name}</div>
+              <div class="model-viewer-container">
+              <div class="multi-viewer-container" id="multi-viewer-${index}"></div>
+                <div class="model-measurements" id="multi-measurements-${index}">
+                  <h4>Model Measurements</h4>
+                  <div class="measurement-item">
+                    <span>Width:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Height:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Depth:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Volume:</span> <span>0.00 mm³</span>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            multiViewersContainer.appendChild(viewerItem);
+
+            // Load the STL file into this viewer
+            loadSTLFileToMultiViewer(file, `multi-viewer-${index}`, index);
+          }
+        });
+
+        // Show the viewers container and comparison tools
+        multiViewersContainer.classList.add('active');
+        modelComparisonTools.classList.add('active');
+      });
+    }
+
+    // Function to load STL file into a multi-viewer
+    function loadSTLFileToMultiViewer(file, containerId, modelIndex) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      // Clear container
+      container.innerHTML = '';
+
+      // Create a Three.js scene
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x222222);
+
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 0, 200);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Add lights
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambientLight);
+
+      // Main directional light (creates shadows)
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(200, 200, 200);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 1024;
+      directionalLight.shadow.mapSize.height = 1024;
+      directionalLight.shadow.camera.near = 0.5;
+      directionalLight.shadow.camera.far = 500;
+      scene.add(directionalLight);
+
+      // Secondary colored lights for better visualization
+      const blueLight = new THREE.DirectionalLight(0x6666ff, 0.4);
+      blueLight.position.set(-100, 100, -100);
+      scene.add(blueLight);
+
+      const redLight = new THREE.DirectionalLight(0xff6666, 0.4);
+      redLight.position.set(100, -100, -100);
+      scene.add(redLight);
+
+      // Add ground plane for shadow
+      const groundGeometry = new THREE.PlaneGeometry(500, 500);
+      const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -80;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Add controls
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.25;
+
+      // Load the STL file
+      const reader = new FileReader();
+      const loader = new THREE.STLLoader();
+
+      reader.onload = function (e) {
+        try {
+          const geometry = loader.parse(e.target.result);
+
+          // Center the geometry
+          geometry.computeBoundingBox();
+          const boundingBox = geometry.boundingBox;
+          const center = new THREE.Vector3();
+          boundingBox.getCenter(center);
+          geometry.translate(-center.x, -center.y, -center.z);
+
+          // Scale to fit view
+          const size = new THREE.Vector3();
+          boundingBox.getSize(size);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 150 / maxDim;
+          geometry.scale(scale, scale, scale);
+
+          // Use reddish-brown color for the model to match reference image
+          const mainMaterial = new THREE.MeshPhongMaterial({
+            color: 0x8B2323, // Reddish-brown
+            specular: 0x555555,
+            shininess: 30,
+            side: THREE.DoubleSide
+          });
+
+          // Create mesh
+          const mesh = new THREE.Mesh(geometry, mainMaterial);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          scene.add(mesh);
+
+          // Add wireframe for better visibility
+          const wireframeGeometry = new THREE.EdgesGeometry(geometry);
+          const wireframeMaterial = new THREE.LineBasicMaterial({
+            color: 0xAAAAAA,
+            transparent: true,
+            opacity: 0.15
+          });
+          const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+          scene.add(wireframe);
+
+          // Save reference to the model and its viewer
+          loadedModels.push({
+            mesh: mesh,
+            scene: scene,
+            camera: camera,
+            controls: controls,
+            boundingBox: boundingBox,
+            scale: scale,
+            name: file.name
+          });
+
+          modelViewers.push({
+            renderer: renderer,
+            container: container,
+            animate: function () {
+              requestAnimationFrame(this.animate.bind(this));
+              controls.update();
+              renderer.render(scene, camera);
+            }
+          });
+
+          // Start animation
+          modelViewers[modelViewers.length - 1].animate();
+
+          // Add model buttons
+          const modelButtons = document.createElement('div');
+          modelButtons.className = 'model-buttons';
+          modelButtons.innerHTML = `
+            <button class="model-button" id="show-dimensions-${containerId}">
+              <i class="fas fa-ruler-combined"></i> Show Dimensions
+            </button>
+          `;
+          container.appendChild(modelButtons);
+
+          // Calculate and update measurements panel
+          updateMeasurementsPanel(boundingBox, scale, containerId);
+
+          // Add external measurement tools
+          createExternalMeasurementTools(containerId, scene, camera, renderer, controls, geometry, boundingBox, scale);
+
+          // Show dimensions button click handler
+          document.getElementById(`show-dimensions-${containerId}`).addEventListener('click', function () {
+            // Toggle dimension indicators
+            const hasIndicators = scene.children.some(child => child.userData && child.userData.isDimensionIndicator);
+
+            if (hasIndicators) {
+              // Remove existing indicators
+              scene.children = scene.children.filter(child => !(child.userData && child.userData.isDimensionIndicator));
+            } else {
+              // Add dimension indicators
+              addDimensionIndicators(scene, geometry, boundingBox, scale);
+            }
+          });
+
+        } catch (error) {
+          console.error("Error loading STL:", error);
+          container.innerHTML = `<div class="error-message">Error loading model: ${error.message}</div>`;
+        }
+      };
+
+      reader.onerror = function () {
+        console.error("Error reading file");
+        container.innerHTML = `<div class="error-message">Error reading file</div>`;
+      };
+
+      // Read the file
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Function to update measurements panel
+    function updateMeasurementsPanel(boundingBox, scale, containerId) {
+      // Get the matching measurements div
+      const measurementsId = `multi-measurements-${containerId.split('-')[2]}`;
+      const measurementsDiv = document.getElementById(measurementsId);
+
+      if (!measurementsDiv) {
+        console.error(`Measurements container with ID ${measurementsId} not found`);
+        return;
+      }
+
+      // Calculate dimensions
+      const width = (boundingBox.max.x - boundingBox.min.x) / scale;
+      const height = (boundingBox.max.y - boundingBox.min.y) / scale;
+      const depth = (boundingBox.max.z - boundingBox.min.z) / scale;
+      const volume = width * height * depth;
+
+      // Format to 2 decimal places
+      const widthStr = width.toFixed(2);
+      const heightStr = height.toFixed(2);
+      const depthStr = depth.toFixed(2);
+      const volumeStr = volume.toFixed(2);
+
+      // Update the measurements panel
+      measurementsDiv.innerHTML = `
+        <h4>Model Measurements</h4>
+        <div class="measurement-item">
+          <span>Width:</span> <span>${widthStr} mm</span>
+        </div>
+        <div class="measurement-item">
+          <span>Height:</span> <span>${heightStr} mm</span>
+          </div>
+        <div class="measurement-item">
+          <span>Depth:</span> <span>${depthStr} mm</span>
+          </div>
+        <div class="measurement-item">
+          <span>Volume:</span> <span>${volumeStr} mm³</span>
+        </div>
+            <div class="material-params">
+          <label style="display: block; margin-bottom: 0.3rem;">Material Density (kg/mm³):</label>
+          <input type="number" id="density-${containerId}" value="0.00000785" step="0.00000001">
+              
+          <label style="display: block; margin-top: 0.7rem; margin-bottom: 0.3rem;">Price per kg (USD):</label>
+          <input type="number" id="price-${containerId}" value="5.00" step="0.01">
+              
+          <button class="material-calc-btn" id="calc-cost-${containerId}" style="margin-top: 0.7rem;">Calculate Cost</button>
+            </div>
+        <div class="cost-result" id="cost-result-${containerId}" style="display: none;"></div>
+      `;
+
+      // Add calculate cost button event listener
+      const calcCostBtn = document.getElementById(`calc-cost-${containerId}`);
+      if (calcCostBtn) {
+        calcCostBtn.addEventListener('click', function () {
+          calculateModelCost(containerId, volume);
+        });
+      }
+    }
+
+    // Function to calculate model cost
+    function calculateModelCost(containerId, volume) {
+      const densityInput = document.getElementById(`density-${containerId}`);
+      const priceInput = document.getElementById(`price-${containerId}`);
+      const costResult = document.getElementById(`cost-result-${containerId}`);
+
+      if (!densityInput || !priceInput || !costResult) {
+        console.error("Cost calculation elements not found");
+        return;
+      }
+
+      const density = parseFloat(densityInput.value);
+      const pricePerKg = parseFloat(priceInput.value);
+
+      if (isNaN(density) || isNaN(pricePerKg)) {
+        costResult.textContent = "Please enter valid numbers";
+        costResult.style.display = "block";
+        return;
+      }
+
+      // Calculate weight in kg and cost
+      const weight = volume * density;
+      const cost = weight * pricePerKg;
+
+      // Display result
+      costResult.innerHTML = `
+        <div>Weight: ${weight.toFixed(4)} kg</div>
+        <div>Cost: $${cost.toFixed(2)}</div>
+      `;
+      costResult.style.display = "block";
+    }
+
+    // Function to add dimension indicators to the 3D scene
+    function addDimensionIndicators(scene, geometry, boundingBox, scale) {
+      // Create dimension arrows
+      const size = new THREE.Vector3();
+      boundingBox.getSize(size);
+
+      const center = new THREE.Vector3();
+      boundingBox.getCenter(center);
+
+      const width = size.x;
+      const height = size.y;
+      const depth = size.z;
+
+      // Create arrows for width (X axis) - blue like in the reference image
+      const widthArrow = createDimensionArrow(
+        new THREE.Vector3(boundingBox.min.x, center.y, boundingBox.min.z),
+        new THREE.Vector3(boundingBox.max.x, center.y, boundingBox.min.z),
+        0x00a6ff
+      );
+      scene.add(widthArrow);
+      widthArrow.userData = { isDimensionIndicator: true };
+
+      // Create arrows for height (Y axis) - blue like in the reference image
+      const heightArrow = createDimensionArrow(
+        new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+        new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
+        0x00a6ff
+      );
+      scene.add(heightArrow);
+      heightArrow.userData = { isDimensionIndicator: true };
+
+      // Create arrows for depth (Z axis) - blue like in the reference image
+      const depthArrow = createDimensionArrow(
+        new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+        new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
+        0x00a6ff
+      );
+      scene.add(depthArrow);
+      depthArrow.userData = { isDimensionIndicator: true };
+    }
+
+    // Function to create a dimension arrow
+    function createDimensionArrow(start, end, color) {
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+
+      // Create a line instead of an arrow to match reference image
+      const lineMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const line = new THREE.Line(lineGeometry, lineMaterial);
+
+      // Add small spheres at ends to make it more visible
+      const sphereGeometry = new THREE.SphereGeometry(2, 16, 16);
+      const sphereMaterial = new THREE.MeshBasicMaterial({ color: color });
+
+      const startSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      startSphere.position.copy(start);
+      line.add(startSphere);
+
+      const endSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      endSphere.position.copy(end);
+      line.add(endSphere);
+
+      return line;
+    }
+
+    // Initialize comparison tool buttons
+    if (document.getElementById('sync-views')) {
+      document.getElementById('sync-views').addEventListener('click', function () {
+        if (loadedModels.length < 2) return;
+
+        // Get reference camera position from first model
+        const refCamera = loadedModels[0].camera;
+        const refControls = loadedModels[0].controls;
+
+        // Sync all other cameras to match
+        for (let i = 1; i < loadedModels.length; i++) {
+          const camera = loadedModels[i].camera;
+          const controls = loadedModels[i].controls;
+
+          camera.position.copy(refCamera.position);
+          camera.quaternion.copy(refCamera.quaternion);
+          controls.target.copy(refControls.target);
+          controls.update();
+        }
+      });
+    }
+
+    if (document.getElementById('measure-all')) {
+      document.getElementById('measure-all').addEventListener('click', function () {
+        if (loadedModels.length === 0) return;
+
+        // Show measurement panels in all viewers
+        document.querySelectorAll('.measurement-panel').forEach(panel => {
+          panel.classList.add('active');
+        });
+
+        // Enable point measurement mode in all viewers
+        document.querySelectorAll('#measure-point').forEach(btn => {
+          if (typeof btn.click === 'function') {
+            btn.click();
+          }
+        });
+      });
+    }
+
+    if (document.getElementById('toggle-side-by-side')) {
+      document.getElementById('toggle-side-by-side').addEventListener('click', function () {
+        if (loadedModels.length === 0) return;
+
+        // Toggle between grid and full width layout
+        if (multiViewersContainer.style.gridTemplateColumns === 'repeat(1, 1fr)') {
+          multiViewersContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
+          this.innerHTML = '<i class="fas fa-columns"></i> Grid Layout';
+        } else {
+          multiViewersContainer.style.gridTemplateColumns = 'repeat(1, 1fr)';
+          this.innerHTML = '<i class="fas fa-columns"></i> Side by Side';
+        }
+
+        // Trigger resize to update viewers
+        window.dispatchEvent(new Event('resize'));
+      });
+    }
+
+    // Function to add a measurement label in 3D space
+    function addMeasurementLabel(scene, point1, point2, labelText, markersArray) {
+      // Calculate the midpoint of the line
+      const midPoint = new THREE.Vector3().addVectors(point1, point2).multiplyScalar(0.5);
+
+      // Calculate direction vector between the two points
+      const direction = new THREE.Vector3().subVectors(point2, point1).normalize();
+
+      // Create an offset vector perpendicular to the line and camera direction
+      // This will position the label above the line
+      const offsetDistance = 10; // Adjust this value as needed
+
+      // Create a temporary up vector
+      const up = new THREE.Vector3(0, 1, 0);
+      if (Math.abs(direction.dot(up)) > 0.9) {
+        // If direction is nearly parallel to up, use a different reference vector
+        up.set(1, 0, 0);
+      }
+
+      // Calculate offset perpendicular to line and up
+      const offset = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(offsetDistance);
+
+      // Apply offset to midpoint to position label above the line
+      const labelPosition = new THREE.Vector3().addVectors(midPoint, offset);
+
+      // Create the label
+      const labelSprite = createTextSprite(labelText);
+      labelSprite.position.copy(labelPosition);
+      scene.add(labelSprite);
+      markersArray.push(labelSprite);
+
+      // Create a small arrow pointing to the line
+      const arrowMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+      const arrowGeometry = new THREE.BufferGeometry().setFromPoints([
+        labelPosition,
+        midPoint
+      ]);
+      const arrow = new THREE.Line(arrowGeometry, arrowMaterial);
+      scene.add(arrow);
+      measureLines.push(arrow);
+    }
+
+    // Function to add an angle label in 3D space
+    function addAngleLabel(scene, point1, point2, point3, labelText, markersArray) {
+      // The middle point is the vertex of the angle
+      const vertexPoint = point2;
+
+      // Calculate the midpoints of the two lines
+      const midPoint1 = new THREE.Vector3().addVectors(point1, point2).multiplyScalar(0.5);
+      const midPoint2 = new THREE.Vector3().addVectors(point3, point2).multiplyScalar(0.5);
+
+      // Calculate an averaged position for the label
+      const labelPosition = new THREE.Vector3().addVectors(midPoint1, midPoint2).multiplyScalar(0.5);
+
+      // Move the label slightly away from the vertex
+      const fromVertex = new THREE.Vector3().subVectors(labelPosition, vertexPoint).normalize().multiplyScalar(15);
+      labelPosition.addVectors(vertexPoint, fromVertex);
+
+      // Create the label
+      const labelSprite = createTextSprite(labelText);
+      labelSprite.position.copy(labelPosition);
+      scene.add(labelSprite);
+      markersArray.push(labelSprite);
+
+      // Create a small indicator line
+      const indicatorMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+      const indicatorGeometry = new THREE.BufferGeometry().setFromPoints([
+        labelPosition,
+        vertexPoint
+      ]);
+      const indicator = new THREE.Line(indicatorGeometry, indicatorMaterial);
+      scene.add(indicator);
+      measureLines.push(indicator);
+    }
+
+    // Function to create a text sprite that always faces the camera
+    function createTextSprite(message) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      // Set canvas size
+      canvas.width = 256;
+      canvas.height = 64;
+
+      // Background with slight transparency
+      context.fillStyle = 'rgba(0, 102, 204, 0.8)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Border
+      context.strokeStyle = 'white';
+      context.lineWidth = 2;
+      context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+      // Text styles
+      context.font = 'Bold 24px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = 'white';
+
+      // Add arrow indicator on the left side
+      context.fillStyle = 'white';
+      context.beginPath();
+      context.moveTo(20, canvas.height / 2);
+      context.lineTo(5, canvas.height / 2 - 8);
+      context.lineTo(5, canvas.height / 2 + 8);
+      context.fill();
+
+      // Draw text
+      context.fillText(message, canvas.width / 2, canvas.height / 2);
+
+      // Create texture from canvas
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+
+      // Create sprite material
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true
+      });
+
+      // Create sprite
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(30, 10, 1);
+
+      return sprite;
+    }
+
+    // Global variables and functions for dimension calculation
+    let dimensionLines = []; // To keep track of dimension lines for removal
+
+    // Function to calculate and display dimensions
+    function calculateAndShowDimensions(geometry, scene, boundingBox, scale, containerId) {
+      // Clear previous dimension lines
+      clearDimensionIndicators();
+
+      // Get the original (pre-scaled) dimensions
+      const length = (boundingBox.max.x - boundingBox.min.x) / scale;
+      const width = (boundingBox.max.y - boundingBox.min.y) / scale;
+      const thickness = (boundingBox.max.z - boundingBox.min.z) / scale;
+      const volume = length * width * thickness;
+
+      // Update the panel with the calculated values
+      document.getElementById(`length-${containerId}`).textContent = length.toFixed(2) + ' mm';
+      document.getElementById(`width-${containerId}`).textContent = width.toFixed(2) + ' mm';
+      document.getElementById(`thickness-${containerId}`).textContent = thickness.toFixed(2) + ' mm';
+      document.getElementById(`volume-${containerId}`).textContent = volume.toFixed(2) + ' mm³';
+
+      // Create visual indicators for length (scaled back to scene coordinates)
+      const lengthStart = new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
+      const lengthEnd = new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z);
+      addDimensionLine(scene, lengthStart, lengthEnd, `${length.toFixed(2)} mm`, 0xff0000); // Red for length
+
+      // Create visual indicators for width
+      const widthStart = new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
+      const widthEnd = new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z);
+      addDimensionLine(scene, widthStart, widthEnd, `${width.toFixed(2)} mm`, 0x00ff00); // Green for width
+
+      // Create visual indicators for thickness
+      const thicknessStart = new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z);
+      const thicknessEnd = new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z);
+      addDimensionLine(scene, thicknessStart, thicknessEnd, `${thickness.toFixed(2)} mm`, 0x0000ff); // Blue for thickness
+    }
+
+    // Function to add a dimension line with label
+    function addDimensionLine(scene, startPoint, endPoint, labelText, color) {
+      // Create line
+      const lineMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 2 });
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([startPoint, endPoint]);
+      const line = new THREE.Line(lineGeometry, lineMaterial);
+      scene.add(line);
+      dimensionLines.push(line);
+
+      // Create label at midpoint
+      const midPoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
+
+      // Calculate offset direction (perpendicular to line)
+      const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+
+      // Make sure up vector isn't parallel to direction
+      if (Math.abs(direction.dot(up)) > 0.9) {
+        up.set(1, 0, 0);
+      }
+
+      // Calculate perpendicular vector for offset
+      const offset = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(20);
+
+      // Position label
+      const labelPosition = new THREE.Vector3().addVectors(midPoint, offset);
+
+      // Create sprite with label
+      const sprite = createColoredTextSprite(labelText, color);
+      sprite.position.copy(labelPosition);
+      scene.add(sprite);
+      dimensionLines.push(sprite);
+
+      // Add bracket lines at start and end
+      const bracketSize = 5;
+      const bracketStart = new THREE.Vector3().addVectors(startPoint, offset.clone().multiplyScalar(0.3));
+      const bracketEnd = new THREE.Vector3().addVectors(endPoint, offset.clone().multiplyScalar(0.3));
+
+      // Brackets perpendicular to main line
+      const bracketMaterial = new THREE.LineBasicMaterial({ color: color });
+
+      // Start bracket
+      const startBracketGeometry = new THREE.BufferGeometry().setFromPoints([
+        startPoint,
+        bracketStart
+      ]);
+      const startBracket = new THREE.Line(startBracketGeometry, bracketMaterial);
+      scene.add(startBracket);
+      dimensionLines.push(startBracket);
+
+      // End bracket
+      const endBracketGeometry = new THREE.BufferGeometry().setFromPoints([
+        endPoint,
+        bracketEnd
+      ]);
+      const endBracket = new THREE.Line(endBracketGeometry, bracketMaterial);
+      scene.add(endBracket);
+      dimensionLines.push(endBracket);
+
+      // Connecting line between brackets (the dimension line itself)
+      const connectingLineGeometry = new THREE.BufferGeometry().setFromPoints([
+        bracketStart,
+        bracketEnd
+      ]);
+      const connectingLine = new THREE.Line(connectingLineGeometry, bracketMaterial);
+      scene.add(connectingLine);
+      dimensionLines.push(connectingLine);
+    }
+
+    // Function to create colored text sprite for dimension labels
+    function createColoredTextSprite(message, backgroundColor) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      // Set canvas size
+      canvas.width = 256;
+      canvas.height = 64;
+
+      // Convert hex color to rgba
+      const r = (backgroundColor >> 16) & 255;
+      const g = (backgroundColor >> 8) & 255;
+      const b = backgroundColor & 255;
+
+      // Background with slight transparency
+      context.fillStyle = `rgba(${r}, ${g}, ${b}, 0.8)`;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Border
+      context.strokeStyle = 'white';
+      context.lineWidth = 2;
+      context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+      // Text styles
+      context.font = 'Bold 22px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = 'white';
+
+      // Draw text
+      context.fillText(message, canvas.width / 2, canvas.height / 2);
+
+      // Create texture from canvas
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+
+      // Create sprite material
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true
+      });
+
+      // Create sprite
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(25, 8, 1);
+
+      return sprite;
+    }
+
+    // Function to clear dimension indicators
+    function clearDimensionIndicators() {
+      dimensionLines.forEach(object => {
+        if (object.parent) {
+          object.parent.remove(object);
+        }
+      });
+      dimensionLines = [];
+    }
+
+    // Function to calculate material cost
+    function calculateMaterialCost(containerId) {
+      // Get the panel to access its stored data values
+      const materialPanel = document.getElementById(`material-panel-${containerId}`);
+      if (!materialPanel) {
+        console.error("Material panel not found");
+        return;
+      }
+
+      // Get volume from the panel's data attribute or from the text content
+      let volume;
+      if (materialPanel.dataset.volume) {
+        volume = parseFloat(materialPanel.dataset.volume);
+      } else {
+        const volumeText = document.getElementById(`volume-${containerId}`).textContent;
+        volume = parseFloat(volumeText.replace(' mm³', ''));
+      }
+
+      // Check if we have a valid volume
+      if (isNaN(volume) || volume <= 0) {
+        console.error("Invalid volume:", volume);
+        alert("Cannot calculate cost: invalid volume measurement");
+        return;
+      }
+
+      const density = parseFloat(document.getElementById(`density-${containerId}`).value);
+      const pricePerKg = parseFloat(document.getElementById(`price-${containerId}`).value);
+
+      // Calculate weight and cost
+      const weight = volume * density; // in kg
+      const cost = weight * pricePerKg;
+
+      // Display result
+      const resultElement = document.getElementById(`cost-result-${containerId}`);
+      resultElement.innerHTML = `
+        <div>Volume: ${volume.toFixed(2)} mm³</div>
+        <div>Weight: ${weight.toFixed(3)} kg</div>
+        <div style="margin-top: 0.5rem; font-size: 1.1rem; font-weight: 600;">Estimated Cost: $${cost.toFixed(2)}</div>
+      `;
+      resultElement.style.display = 'block';
+
+      console.log("Calculated material cost:", volume, weight, cost);
+    }
+
+    // Add a new function to update the Model Measurements section at the bottom
+    function updateModelMeasurementsSection(length, width, thickness, volume) {
+      // Look for the model measurements section
+      const measurementsSection = document.querySelector('.model-container + .download-links');
+      if (!measurementsSection) return;
+
+      // Check if we already have a Model Measurements section, if not create one
+      let modelMeasDiv = document.getElementById('model-measurements-section');
+      if (!modelMeasDiv) {
+        modelMeasDiv = document.createElement('div');
+        modelMeasDiv.id = 'model-measurements-section';
+        modelMeasDiv.style.margin = '2rem 0';
+        modelMeasDiv.style.padding = '1.5rem';
+        modelMeasDiv.style.backgroundColor = '#e6f0ff';
+        modelMeasDiv.style.borderRadius = '8px';
+        modelMeasDiv.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        modelMeasDiv.style.borderLeft = '4px solid #0066cc';
+
+        // Insert before the download links
+        measurementsSection.parentNode.insertBefore(modelMeasDiv, measurementsSection);
+      }
+
+      // Create or update the content
+      modelMeasDiv.innerHTML = `
+        <h2 style="margin-top: 0; color: #0066cc;">Model Measurements</h2>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <div style="font-weight: 600;">Width:</div>
+          <div style="color: #0066cc; font-weight: 700;">${width.toFixed(2)} mm</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <div style="font-weight: 600;">Height:</div>
+          <div style="color: #0066cc; font-weight: 700;">${length.toFixed(2)} mm</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <div style="font-weight: 600;">Depth:</div>
+          <div style="color: #0066cc; font-weight: 700;">${thickness.toFixed(2)} mm</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-top: 1px solid #ccc; padding-top: 0.5rem;">
+          <div style="font-weight: 600;">Volume:</div>
+          <div style="color: #0066cc; font-weight: 700;">${volume.toFixed(2)} mm³</div>
+        </div>
+        
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #ccc;">
+          <h3 style="color: #0066cc;">Material Cost Calculation</h3>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.3rem;">Material Density (kg/mm³):</label>
+            <input type="number" id="density-model" value="0.00000785" step="0.00000001" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.3rem;">Price per kg (USD):</label>
+            <input type="number" id="price-model" value="5.00" step="0.01" style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+          </div>
+          <button id="calculate-model-cost" style="background-color: #0066cc; color: white; border: none; padding: 0.7rem 1rem; border-radius: 4px; cursor: pointer; width: 100%;">Calculate Material Cost</button>
+          <div id="model-cost-result" style="margin-top: 1rem; padding: 1rem; background-color: #e8f5e9; border-radius: 4px; display: none;"></div>
+        </div>
+      `;
+
+      // Add event listener for the calculate button
+      setTimeout(() => {
+        const calcBtn = document.getElementById('calculate-model-cost');
+        if (calcBtn) {
+          calcBtn.addEventListener('click', function () {
+            const density = parseFloat(document.getElementById('density-model').value);
+            const pricePerKg = parseFloat(document.getElementById('price-model').value);
+
+            // Calculate weight and cost
+            const weight = volume * density; // in kg
+            const cost = weight * pricePerKg;
+
+            // Display result
+            const resultElement = document.getElementById('model-cost-result');
+            resultElement.innerHTML = `
+              <div style="font-weight: 600;">Volume: ${volume.toFixed(2)} mm³</div>
+              <div style="font-weight: 600;">Weight: ${weight.toFixed(3)} kg</div>
+              <div style="font-weight: 600; font-size: 1.1rem; margin-top: 0.5rem;">Estimated Cost: $${cost.toFixed(2)}</div>
+            `;
+            resultElement.style.display = 'block';
+          });
+        }
+      }, 100);
+    }
+
+    // Initialize batch upload functionality
+    function initializeBatchUpload() {
+      const batchUploadBtn = document.getElementById('batch-upload-btn');
+      const batchFileUpload = document.getElementById('batch-file-upload');
+      const batchUploadPreview = document.getElementById('batch-upload-preview');
+      const addFileInputBtn = document.getElementById('add-file-input');
+      const multiFileInputs = document.getElementById('multi-file-inputs');
+
+      if (!batchUploadBtn || !batchFileUpload || !batchUploadPreview) {
+        console.error("Batch upload elements not found");
+        return;
+      }
+
+      // Selected files array to keep track
+      window.selectedBatchFiles = [];
+
+      batchUploadBtn.addEventListener('click', function () {
+        batchFileUpload.click();
+      });
+
+      batchFileUpload.addEventListener('change', function () {
+        if (this.files.length === 0) return;
+
+        // Check if user selected more than 20 files
+        if (this.files.length > 20) {
+          alert('You can select up to 20 files at once. Please select fewer files.');
+          return;
+        }
+
+        // Store files and create preview
+        for (let i = 0; i < this.files.length; i++) {
+          const file = this.files[i];
+          // Check if file is already in the list
+          if (!window.selectedBatchFiles.some(f => f.name === file.name)) {
+            window.selectedBatchFiles.push(file);
+          }
+        }
+
+        // Generate preview of selected files
+        updateBatchFilePreview();
+
+        // Clear the file input to allow selecting the same files again if needed
+        this.value = '';
+      });
+
+      // Update the file preview display
+      function updateBatchFilePreview() {
+        batchUploadPreview.innerHTML = '';
+
+        if (window.selectedBatchFiles.length === 0) {
+          batchUploadPreview.innerHTML = '<p>No files selected</p>';
+          return;
+        }
+
+        // Clear existing file inputs
+        multiFileInputs.innerHTML = '';
+
+        // Create file preview items
+        window.selectedBatchFiles.forEach((file, index) => {
+          // Create preview item
+          const fileItem = document.createElement('div');
+          fileItem.className = 'batch-file-item';
+          fileItem.innerHTML = `
+            <span class="batch-file-name">${file.name}</span>
+            <button class="batch-file-remove" data-index="${index}">
+              <i class="fas fa-times"></i>
+            </button>
+          `;
+          batchUploadPreview.appendChild(fileItem);
+
+          // Create file input for this file
+          createFileInputRow(index, file.name, file);
+        });
+
+        // Attach remove listeners
+        document.querySelectorAll('.batch-file-remove').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const index = parseInt(this.getAttribute('data-index'));
+            window.selectedBatchFiles.splice(index, 1);
+            updateBatchFilePreview();
+          });
+        });
+      }
+
+      // Function to create file input row
+      function createFileInputRow(index, filename, file) {
+        const newRow = document.createElement('div');
+        newRow.className = 'file-input-row';
+        newRow.innerHTML = `
+          <div class="file-input-label">Model ${index + 1}:</div>
+          <div class="file-input-wrapper">
+            <div class="file-input-text">${filename}</div>
+            <input type="file" class="multi-stl-input" accept=".stl" data-index="${index}">
+          </div>
+        `;
+
+        multiFileInputs.appendChild(newRow);
+
+        // Get the actual file input
+        const fileInput = newRow.querySelector('input[type="file"]');
+
+        // Create a DataTransfer object
+        try {
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          fileInput.files = dataTransfer.files;
+        } catch (error) {
+          console.error("Error setting file:", error);
+        }
+      }
+
+      // Modify the add file button to check for limits
+      if (addFileInputBtn) {
+        addFileInputBtn.addEventListener('click', function () {
+          const fileRows = multiFileInputs.querySelectorAll('.file-input-row');
+
+          // Check if we've reached the limit
+          if (fileRows.length >= 20) {
+            alert('Maximum of 20 files allowed.');
+            return;
+          }
+
+          const newIndex = fileRows.length;
+
+          const newRow = document.createElement('div');
+          newRow.className = 'file-input-row';
+          newRow.innerHTML = `
+            <div class="file-input-label">Model ${newIndex + 1}:</div>
+            <div class="file-input-wrapper">
+              <div class="file-input-text">No file chosen</div>
+              <input type="file" class="multi-stl-input" accept=".stl" data-index="${newIndex}">
+            </div>
+          `;
+
+          multiFileInputs.appendChild(newRow);
+
+          // Attach event listeners to the new file input
+          const newInput = newRow.querySelector('input[type="file"]');
+          attachFileInputListener(newInput);
+        });
+      }
+    }
+
+    // Modify loadMultipleFilesBtn click handler to handle both individual and batch files
+    if (loadMultipleFilesBtn) {
+      loadMultipleFilesBtn.addEventListener('click', function () {
+        const fileInputs = document.querySelectorAll('.multi-stl-input');
+        let hasFiles = false;
+
+        // Check if any files are selected
+        fileInputs.forEach(input => {
+          if (input.files.length > 0) {
+            hasFiles = true;
+          }
+        });
+
+        if (!hasFiles) {
+          alert('Please select at least one STL file to view.');
+          return;
+        }
+
+        // Clear previous viewers and models
+        multiViewersContainer.innerHTML = '';
+        loadedModels.length = 0;
+        modelViewers.length = 0;
+
+        // Create a viewer for each selected file
+        fileInputs.forEach((input, index) => {
+          if (input.files.length > 0) {
+            const file = input.files[0];
+
+            // Create viewer container
+            const viewerItem = document.createElement('div');
+            viewerItem.className = 'multi-viewer-item';
+            viewerItem.innerHTML = `
+              <div class="multi-viewer-title">${file.name}</div>
+              <div class="model-viewer-container">
+                <div class="multi-viewer-container" id="multi-viewer-${index}"></div>
+                <div class="model-measurements" id="multi-measurements-${index}">
+                  <h4>Model Measurements</h4>
+                  <div class="measurement-item">
+                    <span>Width:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Height:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Depth:</span> <span>0.00 mm</span>
+                  </div>
+                  <div class="measurement-item">
+                    <span>Volume:</span> <span>0.00 mm³</span>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            multiViewersContainer.appendChild(viewerItem);
+
+            // Load the STL file into this viewer
+            loadSTLFileToMultiViewer(file, `multi-viewer-${index}`, index);
+          }
+        });
+
+        // Show the viewers container and comparison tools
+        multiViewersContainer.classList.add('active');
+        modelComparisonTools.classList.add('active');
+      });
+    }
+
+    if (measureAllBtn) {
+      measureAllBtn.addEventListener('click', function () {
+        // Show dimensions in all models
+        loadedModels.forEach((model, index) => {
+          // Get dimension data
+          const boundingBox = model.boundingBox;
+          const scale = model.scale;
+          const scene = model.scene;
+
+          // Check if dimensions are already shown
+          const hasIndicators = scene.children.some(child => child.userData && child.userData.isDimensionIndicator);
+
+          if (hasIndicators) {
+            // Remove existing indicators
+            scene.children = scene.children.filter(child => !(child.userData && child.userData.isDimensionIndicator));
+          } else {
+            // Add dimension indicators
+            addDimensionIndicators(scene, null, boundingBox, scale);
+          }
+        });
+      });
+    }
+
+    // Create external measurement tools
+    function createExternalMeasurementTools(containerId, scene, camera, renderer, controls, geometry, boundingBox, scale) {
+      // Find parent container (the multi-viewer-item)
+      const viewerItem = document.getElementById(containerId).closest('.multi-viewer-item');
+      if (!viewerItem) return;
+
+      // Check if tools already exist
+      if (viewerItem.querySelector('.measurement-tools-container')) {
+        return;
+      }
+
+      // Create measurement tools container
+      const toolsContainer = document.createElement('div');
+      toolsContainer.className = 'measurement-tools-container';
+      toolsContainer.innerHTML = `
+        <div class="measurement-tools-header">
+          <h4><i class="fas fa-ruler-combined"></i> Measurement Tools</h4>
+          <button class="model-button" id="toggle-tools-${containerId}">
+            <i class="fas fa-chevron-up"></i>
+          </button>
+        </div>
+        <div class="measurement-tools-content">
+          <div class="measurement-tools-buttons">
+            <button class="model-button" id="measure-point-${containerId}" title="Click on model to show coordinates">
+              <i class="fas fa-map-marker-alt"></i> Point
+            </button>
+            <button class="model-button" id="measure-distance-${containerId}" title="Click two points to measure distance">
+              <i class="fas fa-arrows-alt-h"></i> Distance
+            </button>
+            <button class="model-button" id="measure-angle-${containerId}" title="Click three points to measure angle">
+              <i class="fas fa-drafting-compass"></i> Angle
+            </button>
+            <button class="model-button" id="clear-measure-${containerId}" title="Clear all measurements">
+              <i class="fas fa-trash-alt"></i> Clear
+            </button>
+          </div>
+          <div class="measurement-tools-results" id="measurement-results-${containerId}">
+            <p>Select a measurement tool and click on the model to measure</p>
+          </div>
+        </div>
+      `;
+
+      // Insert after the model-viewer-container
+      const modelViewerContainer = viewerItem.querySelector('.model-viewer-container');
+      if (modelViewerContainer) {
+        modelViewerContainer.after(toolsContainer);
+      } else {
+        viewerItem.appendChild(toolsContainer);
+      }
+
+      // Setup toggle functionality
+      const toggleButton = document.getElementById(`toggle-tools-${containerId}`);
+      const toolsContent = toolsContainer.querySelector('.measurement-tools-content');
+
+      toggleButton.addEventListener('click', function () {
+        if (toolsContent.style.display === 'none') {
+          toolsContent.style.display = 'flex';
+          toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i>';
+        } else {
+          toolsContent.style.display = 'none';
+          toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i>';
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
